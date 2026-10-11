@@ -46,7 +46,7 @@ After dependencies are installed, double-click **Launch Aurora.cmd** whenever yo
 
 ## 4. Connect your model
 
-1. Open **Settings → Model & connection** in Aurora.
+1. Open **Settings → Model & connection** in Aurora (called **Connections** in the local 0.4.0 preview).
 2. Choose OpenAI, Claude / Anthropic, OpenRouter, Ollama Cloud or Local Ollama. For cloud providers, create a key through that provider's API account. API billing can be separate from a chat website subscription.
 3. Paste it into the app’s API key field. Never paste it into source files, documentation or a public issue.
 4. Click **Load models**, select a model that supports tool calls, and save.
@@ -63,13 +63,15 @@ Open **Settings → Appearance** to select Classic, Moonlight or Sunrise palette
 
 ## 5. Set up computer control
 
-In **Settings → Model & connection**, make sure **Allow Aurora to use my mouse and keyboard** is enabled.
+In **Settings → Model & connection** (or **Connections** in 0.4.0), make sure **Allow Aurora to use my mouse and keyboard** is enabled. In 0.4.0, also leave **Computer control** enabled under **Plugins & MCP**.
 
 Install or open a supported browser: **Opera, Brave, Chrome, Edge or Firefox**. For example, ask “Open Brave and go to YouTube.” Aurora restores an existing window when possible and uses observed page controls for subsequent actions. Avoid moving the mouse or switching applications during an action. Elevated/admin windows and inaccessible controls may not be controllable.
 
 To stop, use the app’s **Stop** button, **Ctrl+Alt+Escape**, or move the pointer into the primary display’s top-left corner. With voice active, “stop task” also cancels work between spoken replies. Completed changes remain.
 
 ## 6. Set up voice, if wanted
+
+For the local 0.4.0 preview, **Settings → Plugins & MCP** additionally lets you disable built-in tool groups or connect your own installed MCP servers. Follow the [extensions setup guide](EXTENSIONS.md) for prerequisites, transports and approval behavior. No MCP server is required for ordinary chat, files or desktop assistance.
 
 1. Configure your model connection first.
 2. Open **Voice & wake word**.

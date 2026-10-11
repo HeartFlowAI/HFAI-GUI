@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <strong>Windows · v0.2.4</strong> &nbsp;·&nbsp; Choose your model &nbsp;·&nbsp; Optional voice &nbsp;·&nbsp; Early preview
+  <strong>Windows · Source v0.4.5</strong> &nbsp;·&nbsp; Choose your model &nbsp;·&nbsp; Optional voice &nbsp;·&nbsp; Early preview
 </p>
 
 <p align="center">
@@ -27,7 +27,15 @@
 
 ---
 
+## Latest development update
+
+Aurora 0.4.5 organizes conversations in one expandable workspace sidebar. Sessions and workspaces have three-dot and right-click menus; search replaces the tree with matching conversations. Settings have dedicated sections, and the composer includes work mode and a searchable model picker.
+
+The latest published installer is available through the download link above. Source changes become automatic app updates only after a new installer release is published.
+
 ## Meet your companion
+
+Local development is preparing **0.4.4**, with DeepSeek-style navigation and Settings organization, a searchable provider-grouped model picker in the composer, and Normal/Aurora Code selection beside the prompt. Aurora keeps the Heartflow color palette and companion features. The latest published installer remains **0.2.4** until a new release is explicitly approved. See the [changelog](CHANGELOG.md) for the local changes.
 
 Connect OpenAI, Claude, OpenRouter, Ollama Cloud or local Ollama, choose a model with tool support, and work with Aurora in the app or on your desktop. She can help you explore an idea, understand a project, find a file or interact with a supported application—and show what she’s doing along the way.
 
@@ -45,6 +53,7 @@ Connect OpenAI, Claude, OpenRouter, Ollama Cloud or local Ollama, choose a model
 | ✨ **A visible companion** | Animated activity poses, three colour palettes and three community outfits by Jaymie, desktop teleports, a pink pointer and a compact keyboard/action display. |
 | ↓ **Updates at your pace** | Installed copies quietly check on startup. Download and restart when you choose. |
 | 🛡️ **Review & control** | Follow tool activity, stop a task and approve every direct file write or PowerShell command before it runs. |
+| ◇ **Extensions (0.4.0 preview)** | Enable or disable built-in tool groups and connect installed local MCP servers or remote Streamable HTTP endpoints. Every external tool call asks for approval. See [MCP setup](docs/EXTENSIONS.md). |
 
 **Supported browsers:** Opera · Brave · Chrome · Edge · Firefox  
 **Other supported apps:** Explorer · Notepad · Calculator

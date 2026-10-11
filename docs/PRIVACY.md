@@ -24,6 +24,8 @@ Provider access, billing and retention rules are governed by the service you sel
 
 ## Actions and boundaries
 
+Optional MCP server settings and local executable arguments are stored in the profile. Bearer tokens use Windows credential encryption; command arguments are plain text and must not contain credentials. Connecting a local server starts its executable with your Windows permissions and is not a sandbox. Aurora does not automatically install or connect servers. An approved MCP call sends the displayed arguments to that server; returned text becomes conversation context sent to the selected model. Disconnecting closes the client and its managed local server process. Built-in plugin switches control Aurora's tool inventory, not an operating-system security boundary.
+
 Direct workspace file tools validate paths and reject junction escapes. File writes and every PowerShell command require approval. PowerShell itself is not sandboxed and can operate beyond the workspace with your account’s permissions. There is no general undo or automatic rollback.
 
 Computer control targets a supported application allowlist and current observed controls. It checks foreground identity and user pointer movement; it cannot reliably control elevated windows or interfaces that expose no useful controls. Model mistakes and untrusted page content remain risks. Model instructions for confirmation of purchases, messages, deletion and account changes are not an operating-system sandbox.

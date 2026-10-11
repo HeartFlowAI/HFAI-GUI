@@ -8,7 +8,7 @@ function normalize(data){
  data.projects=Array.isArray(data.projects)?data.projects.filter(p=>p&&typeof p.id==='string'&&typeof p.name==='string').map(p=>({...p,workspace:typeof p.workspace==='string'?p.workspace:''})):[];
  data.defaultWorkspace=typeof data.defaultWorkspace==='string'?data.defaultWorkspace:(data.workspace||'');
  data.chats=Array.isArray(data.chats)?data.chats:[];
- for(const chat of data.chats){chat.mode=mode(chat.mode);chat.projectId=project(data,chat.projectId)?chat.projectId:null;chat.updated=chat.updated||chat.created||Date.now();}
+ for(const chat of data.chats){chat.mode=mode(chat.mode);chat.projectId=project(data,chat.projectId)?chat.projectId:null;chat.updated=chat.updated||chat.created||Date.now();chat.title=typeof chat.title==='string'&&chat.title.trim()?chat.title.trim():'New conversation';chat.pinned=chat.pinned===true;chat.archived=chat.archived===true;}
  data.mode=mode(data.mode);data.activeProjectId=project(data,data.activeProjectId)?data.activeProjectId:null;
  if(data.chats.some(c=>c.id===data.currentId))selectSession(data,data.currentId);else chooseContext(data,data.mode,data.activeProjectId);
  return data;
@@ -21,10 +21,15 @@ function chooseContext(data,nextMode,projectId){
  if(chat)selectSession(data,chat.id);else createSession(data);
 }
 function addProject(data,name){if(typeof name!=='string'||!name.trim()||name.trim().length>80)throw Error('Use a project name between 1 and 80 characters.');const p={id:randomUUID(),name:name.trim(),workspace:'',created:Date.now()};data.projects.push(p);chooseContext(data,data.mode,p.id);return p;}
+function deleteProject(data,id){const target=project(data,id);if(!target)throw Error('Workspace not found.');data.projects=data.projects.filter(p=>p.id!==id);for(const chat of data.chats)if(chat.projectId===id)chat.projectId=null;if(data.activeProjectId===id){data.activeProjectId=null;const current=data.chats.find(c=>c.id===data.currentId);if(current){current.projectId=null;data.mode=current.mode;}else createSession(data);}syncWorkspace(data);return target;}
 function assignProject(data,id){if(id!==null&&!project(data,id))throw Error('Project not found.');const chat=data.chats.find(c=>c.id===data.currentId);chat.projectId=id;data.activeProjectId=id;syncWorkspace(data);}
 function deleteSession(data,id){if(!data.chats.some(c=>c.id===id))throw Error('Session not found.');data.chats=data.chats.filter(c=>c.id!==id);if(data.currentId===id)chooseContext(data,data.mode,data.activeProjectId);}
 function setWorkspace(data,folder){const p=project(data,data.activeProjectId);if(p)p.workspace=folder;else data.defaultWorkspace=folder;syncWorkspace(data);}
-function summaries(data){return data.chats.map(c=>({id:c.id,title:c.title,mode:c.mode,projectId:c.projectId,updated:c.updated}));}
+function renameSession(data,id,title){const chat=data.chats.find(c=>c.id===id);if(!chat)throw Error('Session not found.');if(typeof title!=='string'||!title.trim()||title.trim().length>120)throw Error('Use a session name between 1 and 120 characters.');chat.title=title.trim();chat.updated=Date.now();return chat;}
+function togglePinned(data,id){const chat=data.chats.find(c=>c.id===id);if(!chat)throw Error('Session not found.');chat.pinned=!chat.pinned;chat.updated=Date.now();return chat;}
+function archiveSession(data,id,archived=true){const chat=data.chats.find(c=>c.id===id);if(!chat)throw Error('Session not found.');chat.archived=!!archived;if(data.currentId===id&&chat.archived)chooseContext(data,data.mode,data.activeProjectId);return chat;}
+function duplicateSession(data,id){const source=data.chats.find(c=>c.id===id);if(!source)throw Error('Session not found.');const copy={...source,id:randomUUID(),title:`${source.title} copy`,messages:source.messages.map(message=>({...message})),created:Date.now(),updated:Date.now(),pinned:false,archived:false};data.chats.unshift(copy);data.currentId=copy.id;data.mode=copy.mode;data.activeProjectId=copy.projectId;syncWorkspace(data);return copy;}
+function summaries(data){return data.chats.filter(c=>!c.archived).sort((a,b)=>Number(b.pinned)-Number(a.pinned)||b.updated-a.updated).map(c=>({id:c.id,title:c.title,mode:c.mode,projectId:c.projectId,updated:c.updated,pinned:!!c.pinned}));}
 function searchSessions(data,query){
  if(typeof query!=='string'||query.length>200)throw Error('Search with up to 200 characters.');const term=query.trim().toLocaleLowerCase();if(!term)return [];
  const hits=[];for(const chat of data.chats){let snippet='';let matched=chat.title.toLocaleLowerCase().includes(term);
@@ -32,4 +37,4 @@ function searchSessions(data,query){
  if(matched)hits.push({...summaries({chats:[chat]})[0],snippet});if(hits.length===100)break;}
  return hits;
 }
-module.exports={normalize,createSession,selectSession,chooseContext,addProject,assignProject,deleteSession,setWorkspace,summaries,searchSessions};
+module.exports={normalize,createSession,selectSession,chooseContext,addProject,deleteProject,assignProject,deleteSession,renameSession,togglePinned,archiveSession,duplicateSession,setWorkspace,summaries,searchSessions};

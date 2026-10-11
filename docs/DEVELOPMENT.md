@@ -98,6 +98,20 @@ This runner launches separate Electron processes sharing one isolated profile. I
 
 Normal launches allow one primary Aurora per Windows user/profile. Closing the main window quits the whole app; minimizing keeps it alive for voice use. `--smoke-test` normally isolates fixture instances; `--single-instance-smoke` enables the real lock for this specific test. Keep these flags out of production shortcuts.
 
+## Workspace UI verification
+
+The 0.3.0 UI refresh is implemented in `src/workspace-ui.css` and `src/workspace-ui.js`, with activity rendering and project counts in `src/renderer.js`. It retains the existing Electron security boundary, provider adapters, session storage, pet windows and voice workflow. UI preferences are local to the current profile; they contain only panel visibility and project-section folding choices.
+
+Run `node_modules/.bin/electron.cmd scripts/workspace-ui-smoke.js --smoke-test` to check panel persistence, search and settings shortcuts, appearance access, activity success/error states and compact layouts. It writes isolated preview screenshots under `test-output/workspace-ui-*`; those previews use synthetic conversations, not real user data. Also run the existing library and settings fixtures for project/session operations and appearance propagation into the pet and voice notch.
+
+Layout research: [DeepSeek Harness app frame](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/client/ui-layout/src/client/AppFrame.tsx). The Aurora implementation is original, using its existing renderer rather than adopting the upstream framework.
+
+## Extensions verification
+
+The 0.4.0 workspace adds `src/harness-ui.js`, `src/harness-ui.css`, `src/workspace-browser.js` and `src/extensions.js`. Run `node_modules/.bin/electron.cmd scripts/harness-ui-smoke.js --smoke-test` to verify settings section navigation, provider cards, read-only file previews, disabled tool inventory, a real local MCP server, external approvals and encrypted bearer-token storage in an isolated profile. Unit tests additionally exercise authenticated Streamable HTTP against a local fixture. No live provider credentials are used.
+
+The production dependency audit is clean as of this development check. The full development audit reports eight moderate findings in the existing Electron build-tool chain through `sprintf-js`; a normal `npm audit fix` does not resolve them. No forced major dependency change was applied. Recheck before publishing a release.
+
 ## Animation verification
 
 Run `node_modules/.bin/electron.cmd scripts/animation-audit.js` to inspect every activity pose, clean alpha and both pointing directions in the real shared renderer. It writes contact sheets and a report under `test-output/animation-audit-*`. The `pointing-check.png` preview places a mock selected file beside each actual rendered fingertip. This check does not use the physical mouse or Explorer.

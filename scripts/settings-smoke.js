@@ -19,8 +19,9 @@ app.whenReady().then(async()=>{
   const disable=app.disableHardwareAcceleration;app.disableHardwareAcceleration=()=>{};
   require(path.join(sourceRoot,'main'));app.disableHardwareAcceleration=disable;let win;
   await until(()=>{win=BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('index.html'));return win&&!win.webContents.isLoading();});
-  const js=code=>win.webContents.executeJavaScript(code),load=async()=>(await js('window.aurora.load()')).value;
+const js=code=>win.webContents.executeJavaScript(code),load=async()=>(await js('window.aurora.load()')).value;
   await until(()=>js('typeof view!=="undefined"'));let value=await load();assert.equal(value.provider,'ollama-cloud');assert.equal(value.model,'legacy-model');assert.equal(value.messages[0].content,'Keep this conversation');assert.equal(value.hasKey,true);assert.equal(value.appearance,'classic');
+  await js('if(document.getElementById("companion-toggle").getAttribute("aria-expanded")==="false")document.getElementById("companion-toggle").click()');
   const errors=[];win.webContents.on('console-message',(_event,level,message)=>{if(level>=3)errors.push(message);});
   assert.equal(await js('document.querySelectorAll(".sidebar-bottom [data-settings-section]").length'),0);
   assert.equal(await js('document.getElementById("update-download").closest(".sidebar-footer")!==null'),true);
