@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.5 - Sidebar actions (unreleased)
+## 0.4.5 - Sidebar actions (2026-10-11)
 
 - Added three-dot menus and right-click actions directly to session and workspace rows.
 - Session menus provide rename, pin, duplicate, archive and delete actions.

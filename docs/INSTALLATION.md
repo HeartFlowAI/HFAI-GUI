@@ -14,7 +14,7 @@ For cloud models, no local Ollama server, Python, GitHub CLI or globally install
 
 ## 2. Get the project
 
-For the easiest installation, open **[GitHub Releases](https://github.com/HeartFlowAI/hfai_harness_app/releases/latest)** and download **Heartflow-Aurora-Setup-0.2.4.exe**. Run it under your Windows account, choose an installation folder and launch from its desktop shortcut. Node.js and npm are not needed for installed copies. A source ZIP is a different download; follow the source instructions below only if you want to develop or build Aurora yourself.
+For the easiest installation, open **[GitHub Releases](https://github.com/HeartFlowAI/hfai_harness_app/releases/latest)** and download **Heartflow-Aurora-Setup-0.4.5.exe**. Run it under your Windows account, choose an installation folder and launch from its desktop shortcut. Node.js and npm are not needed for installed copies. A source ZIP is a different download; follow the source instructions below only if you want to develop or build Aurora yourself.
 
 1. Open this repository’s GitHub page.
 2. Select **Code → Download ZIP**.

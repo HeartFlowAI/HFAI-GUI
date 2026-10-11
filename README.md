@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <strong>Windows · Source v0.4.5</strong> &nbsp;·&nbsp; Choose your model &nbsp;·&nbsp; Optional voice &nbsp;·&nbsp; Early preview
+  <strong>Windows · v0.4.5</strong> &nbsp;·&nbsp; Choose your model &nbsp;·&nbsp; Optional voice &nbsp;·&nbsp; Early preview
 </p>
 
 <p align="center">
@@ -27,15 +27,15 @@
 
 ---
 
-## Latest development update
+## Latest release
 
 Aurora 0.4.5 organizes conversations in one expandable workspace sidebar. Sessions and workspaces have three-dot and right-click menus; search replaces the tree with matching conversations. Settings have dedicated sections, and the composer includes work mode and a searchable model picker.
 
-The latest published installer is available through the download link above. Source changes become automatic app updates only after a new installer release is published.
+Download the 0.4.5 Windows installer below, or let an installed copy of Aurora check for updates.
 
 ## Meet your companion
 
-Local development is preparing **0.4.4**, with DeepSeek-style navigation and Settings organization, a searchable provider-grouped model picker in the composer, and Normal/Aurora Code selection beside the prompt. Aurora keeps the Heartflow color palette and companion features. The latest published installer remains **0.2.4** until a new release is explicitly approved. See the [changelog](CHANGELOG.md) for the local changes.
+Aurora keeps the Heartflow color palette and companion features, with organized workspace navigation, dedicated Settings sections and model selection beside the prompt. See the [changelog](CHANGELOG.md) for all changes.
 
 Connect OpenAI, Claude, OpenRouter, Ollama Cloud or local Ollama, choose a model with tool support, and work with Aurora in the app or on your desktop. She can help you explore an idea, understand a project, find a file or interact with a supported application—and show what she’s doing along the way.
 
@@ -62,7 +62,7 @@ Connect OpenAI, Claude, OpenRouter, Ollama Cloud or local Ollama, choose a model
 
 ### 1 · Install and launch
 
-Download **[Heartflow-Aurora-Setup-0.2.4.exe](https://github.com/HeartFlowAI/hfai_harness_app/releases/download/v0.2.4/Heartflow-Aurora-Setup-0.2.4.exe)**, run it, and launch **Aurora - Heartflow AI** from your desktop or Start menu. The installer includes the app runtime; Node.js and npm are only needed for source development.
+Download **[Heartflow-Aurora-Setup-0.4.5.exe](https://github.com/HeartFlowAI/hfai_harness_app/releases/download/v0.4.5/Heartflow-Aurora-Setup-0.4.5.exe)**, run it, and launch **Aurora - Heartflow AI** from your desktop or Start menu. The installer includes the app runtime; Node.js and npm are only needed for source development.
 
 See the **[complete Windows installation guide](docs/INSTALLATION.md)** for model and voice setup, permissions, updates and troubleshooting.
 
@@ -137,7 +137,7 @@ The [development guide](docs/DEVELOPMENT.md) covers packaging, integration check
 | Explore more | |
 | :--- | :--- |
 | [Installation guide](docs/INSTALLATION.md) | Full Windows setup, voice, shortcuts and troubleshooting. |
-| [Changelog](CHANGELOG.md) | Changes in each version, including 0.2.4. |
+| [Changelog](CHANGELOG.md) | Changes in each version, including 0.4.5. |
 | [Development guide](docs/DEVELOPMENT.md) | Build commands, fixtures and verification. |
 | [Privacy & permissions](docs/PRIVACY.md) | Local storage, cloud data and execution boundaries. |
 | [Project whitepaper](WHITEPAPER.md) | Architecture, implemented features, limitations and roadmap. |
