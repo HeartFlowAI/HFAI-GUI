@@ -34,7 +34,7 @@
   }
   foldProjects(preferences.projects === true); toggle.onclick = () => foldProjects(!preferences.projects);
   byId('project-add').addEventListener('click', () => foldProjects(false));
-  const section = companion.querySelector(':scope > .section-label'); section.textContent = 'YOUR COMPANION';
+  const section = companion.querySelector(':scope > .section-label'); section.textContent = 'YOUR WAIFU';
   const companionTop = document.createElement('div'); companionTop.className = 'companion-top';
   const appearance = document.createElement('button'); appearance.textContent = 'Appearance'; appearance.onclick = () => byId('appearance-open').click();
   section.replaceWith(companionTop); companionTop.append(section, appearance);

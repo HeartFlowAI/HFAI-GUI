@@ -81,18 +81,18 @@ function anthropicMessages(messages) {
   return result;
 }
 async function chat(options) {
-  const { provider, key, model, messages, tools = [], onText, signal, fetcher } = options;
+  const { provider, key, model, messages, tools = [], onText, signal, fetcher, reasoningEffort = '' } = options;
   if (!Object.hasOwn(endpoints, provider)) throw Error('Unknown model provider.');
   let content = '', calls = [], complete = false, output, reasoning = [];
   const text = value => { if (value) { content += value; onText?.(value); } };
   const system = messages.filter(m => m.role === 'system').map(m => m.content).join('\n');
   let body, endpoint, headers = {}, blocks = [], fragments = new Map();
   if (provider === 'openai') {
-    endpoint = 'responses'; body = { model, instructions: system, input: openaiInput(messages,model), tools: tools.map(t => ({ type: 'function', ...t.function, strict: false })), stream: true, store: false };
+    endpoint = 'responses'; body = { model, instructions: system, input: openaiInput(messages,model), tools: tools.map(t => ({ type: 'function', ...t.function, strict: false })), stream: true, store: false, ...(reasoningEffort ? { reasoning: { effort: reasoningEffort } } : {}) };
   } else if (provider === 'anthropic') {
     endpoint = 'messages'; headers = { Authorization: '', 'x-api-key': key, 'anthropic-version': '2023-06-01' };
     body = { model, system, messages: anthropicMessages(messages), tools: tools.map(t => ({ name: t.function.name, description: t.function.description, input_schema: t.function.parameters })), max_tokens: 8192, stream: true };
-  } else { endpoint = 'chat/completions'; body = { model, messages: routerMessages(messages,model), tools, stream: true }; }
+  } else { endpoint = 'chat/completions'; body = { model, messages: routerMessages(messages,model), tools, stream: true, ...(provider === 'openrouter' && reasoningEffort ? { reasoning: { effort: reasoningEffort } } : {}) }; }
   const response = await http(`${endpoints[provider]}/${endpoint}`, { key, body, signal, fetcher, headers, label: provider });
   await events(response, data => {
     if (data === '[DONE]') return;

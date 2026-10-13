@@ -1,0 +1,21 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'"><title>Aurora command brick</title><link rel="stylesheet" href="brick.css"></head>
+<body>
+  <section id="brick" data-expanded="false">
+    <div class="grip"><span class="grip-dots" aria-hidden="true">⣿</span><div class="top-controls"><button id="pin" class="mini" type="button" title="Keep open" aria-label="Keep open" aria-pressed="false"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 4h5l-.9 5.6 2.9 2.9v1.9H7.5v-1.9l2.9-2.9z"/><path d="M12 14.4V20"/></svg></button><button id="collapse" class="mini" type="button" title="Collapse" aria-label="Collapse"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><button id="open" class="mini" type="button" title="Open Aurora" aria-label="Open Aurora">↗</button><button id="hide" class="mini" type="button" title="Hide" aria-label="Hide">×</button></div></div>
+    <div class="row">
+      <img id="avatar" class="avatar" src="assets/brand/heartflow.png" alt="">
+      <form id="form" class="entry">
+        <input id="input" type="text" autocomplete="off" maxlength="20000" placeholder="Tell your waifu what to do…" aria-label="Command">
+        <button id="mic" type="button" class="round" title="Speak (⌥⌘Space)" aria-label="Speak">◉</button>
+        <button id="send" type="submit" class="send" aria-label="Send"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 13.2V3.1"/><path d="M3.7 7.4 8 3.1l4.3 4.3"/></svg></button>
+      </form>
+    </div>
+    <div id="panel" class="panel" hidden>
+      <div class="line"><span id="dot" class="dot"></span><span id="status">Ready</span><span class="thinking" id="thinking" hidden><i></i><i></i><i></i></span></div>
+      <div id="heard" class="heard" hidden></div>
+      <div id="reply" class="reply"></div>
+      <div id="error" class="error" role="alert" hidden></div>
+    </div>
+  </section>
+  <script src="brick.js"></script>
+</body></html>

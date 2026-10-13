@@ -12,9 +12,9 @@ async function request(endpoint, key, body, signal, fetcher = fetch) {
   return response;
 }
 
-async function chat({ key, model, messages, tools, signal, onText, fetcher, provider = 'ollama-cloud', baseUrl }) {
-  if (!['ollama-cloud', 'ollama-local'].includes(provider)) return require('./provider-adapters').chat({ key, model, messages, tools, signal, onText, fetcher, provider });
-  const body = { model, messages: require('./provider-adapters').ollamaMessages(messages), tools, stream: true };
+async function chat({ key, model, messages, tools, signal, onText, fetcher, provider = 'ollama-cloud', baseUrl, reasoningEffort = '' }) {
+  if (!['ollama-cloud', 'ollama-local'].includes(provider)) return require('./provider-adapters').chat({ key, model, messages, tools, signal, onText, fetcher, provider, reasoningEffort });
+  const body = { model, messages: require('./provider-adapters').ollamaMessages(messages), tools, stream: true, ...(reasoningEffort ? { think: true } : {}) };
   const response = provider === 'ollama-local'
     ? await require('./provider-adapters').http(`${require('./provider-settings').localUrl(baseUrl)}/api/chat`, { body, signal, fetcher, label: 'Local Ollama' })
     : await request('chat', key, body, signal, fetcher);
