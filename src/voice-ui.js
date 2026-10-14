@@ -1,6 +1,6 @@
 (() => {
   const el=id=>document.getElementById(id);
-  let voice,questionId,questionCard,playing;
+  let voice,questionId,questionCard,playing,isWindows=true;
   const labels={off:'Microphone off',starting:'Starting microphone…',wake:'Listening for “Aurora”',waking:'Aurora heard you',speaking:'Aurora is speaking',listening:'Listening to you',transcribing:'Recording stopped · transcribing…',working:'Working · voice controls available',approval:'Say “approve action” or “deny action”'};
   window.renderAuroraVoice=value=>{
     if(!value)return;voice=value;if(value.enabled&&value.provider==='fish')window.AuroraPcmPlayer?.prepare();else if(!value.enabled)window.AuroraPcmPlayer?.release();
@@ -21,7 +21,7 @@
   function fields(){
     const provider=el('voice-provider').value,selected=voice?.[provider];
     el('voice-key').value='';el('voice-id').value=selected?.voiceId||'';
-    el('voice-key-help').textContent=selected?.hasKey?'A key is saved. Leave blank to keep it.':'Your key is encrypted on this Windows device.';
+    el('voice-key-help').textContent=selected?.hasKey?'A key is saved. Leave blank to keep it.':'Your key is encrypted on this device.';
     el('voice-load').hidden=provider!=='elevenlabs';el('fish-model-label').hidden=provider!=='fish';el('fish-model').hidden=provider!=='fish';
     el('voice-id-help').textContent=provider==='fish'?'Paste a voice model’s reference ID from your Fish Audio voice library.':'Load your ElevenLabs voices, then choose a voice ID.';
     el('voice-ids').replaceChildren();
@@ -29,9 +29,11 @@
     speechFields();
   }
   el('voice-open').onclick=action(async()=>{
-    voice=(await call(window.aurora.load())).voice;
-    el('voice-provider').value=voice.provider;el('fish-model').value=voice.fishModel;el('speech-engine').value=voice.recognitionEngine||'windows';el('speech-language').value=voice.speechLanguage||'en';fields();
+    const loaded=await call(window.aurora.load());voice=loaded.voice;isWindows=loaded.platform!=='darwin';
+    if(!isWindows){const option=el('speech-engine').querySelector('option[value="windows"]');if(option)option.remove();}
+    el('voice-provider').value=voice.provider;el('fish-model').value=voice.fishModel;el('speech-engine').value=isWindows?(voice.recognitionEngine||'windows'):'cloud';el('speech-language').value=voice.speechLanguage||'en';fields();
     el('voice-dialog').showModal();el('recognizer').replaceChildren();
+    if(!isWindows){el('voice-status-message').textContent='Cloud recognition is used on this system; no local speech engine is needed.';return;}
     el('voice-status-message').textContent='Checking installed Windows speech languages…';
     try{const available=await call(window.aurora.voiceCapabilities());for(const item of available.recognizers){const option=document.createElement('option');option.value=item.id;option.textContent=item.language+' · '+item.name;el('recognizer').append(option);}if(voice.recognizerId)el('recognizer').value=voice.recognizerId;el('voice-status-message').textContent=available.recognizers.length?'Cloud recognition and Windows fallback are available as options.':'Cloud recognition needs no Windows speech language. Install an English speech language only for the local fallback.';}catch(error){el('voice-status-message').textContent='Windows fallback is unavailable. You can still use Cloud recognition.';}
   });

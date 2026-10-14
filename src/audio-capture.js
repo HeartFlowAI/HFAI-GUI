@@ -18,7 +18,7 @@ function createAudioCapture({onPCM,onError,deviceId=''}){
   }
   async function record(value){
     enabled=value;await loaded;if(!win||win.isDestroyed())throw Error('Microphone is closed.');
-    return new Promise((resolve,reject)=>{const id=randomUUID(),timer=setTimeout(()=>{pending.delete(id);reject(Error('Microphone did not respond. Check Windows microphone permissions.'));},10000);pending.set(id,{resolve,reject,timer});win.webContents.send('microphone-command',{id,record:value,deviceId});});
+    return new Promise((resolve,reject)=>{const id=randomUUID(),timer=setTimeout(()=>{pending.delete(id);reject(Error('Microphone did not respond. Check system microphone permissions.'));},10000);pending.set(id,{resolve,reject,timer});win.webContents.send('microphone-command',{id,record:value,deviceId});});
   }
   function stop(){enabled=false;ipcMain.removeListener(channel,receive);for(const item of pending.values()){clearTimeout(item.timer);item.reject(Error('Microphone stopped.'));}pending.clear();if(win&&!win.isDestroyed())win.destroy();win=null;}
   return {start,record,stop};

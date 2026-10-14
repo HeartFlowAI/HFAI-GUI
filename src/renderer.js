@@ -106,7 +106,7 @@ function flushReply() {
   const follow=pinned();AuroraMarkdown.render(replyElement,replyText);if(follow)scroll();updateScrollButton();
 }
 window.addEventListener('aurora-notice',event=>toast(event.detail));
-const toolLabels={ask_user_question:'Waiting for your answer',voice_reply:'Preparing a spoken reply',find_files:'Searching your files',reveal_file:'Showing a file',list_files:'Exploring a folder',read_file:'Reading a file',write_file:'Writing a file',run_powershell:'Running a command',web_search:'Searching the web',computer:'Using your computer',open_application:'Opening an app'};
+const toolLabels={ask_user_question:'Waiting for your answer',voice_reply:'Preparing a spoken reply',find_files:'Searching your files',reveal_file:'Showing a file',list_files:'Exploring a folder',read_file:'Reading a file',write_file:'Writing a file',run_powershell:'Running a command',web_search:'Searching the web',computer:'Using your computer',open_application:'Opening an app',control_media:'Controlling playback'};
 function finishActivity(item,result) {
   let failed=false;try{failed=!!JSON.parse(result)?.error;}catch{}
   item.dataset.status=failed?'error':'done';
@@ -129,7 +129,7 @@ function activity(name, args, result, id, live = false) {
   if(live){const card=toolCard(name,args,result,id);$('messages').append(card);if(id)toolCards.set(id,card);if(pinned())scroll();updateScrollButton();}
 }
 function setBusy(value) { busy = value; $('stop').hidden = !value; $('send').disabled = value; $('new-chat').disabled = value; $('workspace').disabled = value;for(const id of ['project-add','session-project','session-delete','composer-model','composer-attach','reasoning-effort','composer-agent','composer-combo'])$(id).disabled=value; }
-function petDisplay(value) { detached = value; $('pet-host').hidden = value; $('detach').textContent = value ? '↙ Bring Aurora home' : '↗ Let me explore your desktop'; $('roam').hidden = !value; const toggle=$('desktop-toggle'); if(toggle){toggle.setAttribute('aria-pressed',String(value));toggle.classList.toggle('active',value);} }
+function petDisplay(value) { detached = value; $('pet-host').hidden = value; const roam=$('pet-roam'); if(roam)roam.hidden=!value; const toggle=$('pet-desktop'); if(toggle){toggle.setAttribute('aria-pressed',String(value));toggle.textContent=value?'↙ Bring Aurora home':'↗ Send Aurora to your desktop';} }
 function requestSessionDelete(id){
   if(busy)return;
   const chat=view.chats.find(c=>c.id===id);if(!chat)return;
@@ -162,6 +162,7 @@ function render(data) {
   const changedChat=view?.currentId!==data.currentId;
   if (changedChat) { $('file-results-open').hidden = true; $('file-results-dialog').close(); $('file-results').replaceChildren(); clearAttachments(); }
   view = data; setBusy(data.busy); petDisplay(data.detached);
+  document.body.dataset.theme = data.theme || 'heartflow';
   $('pet-host').dataset.appearance = data.appearance || 'classic';
   $('app-version').textContent = data.version;
   renderUpdates(data.updates);
@@ -232,7 +233,6 @@ $('delete-session-confirm').onclick=action(async()=>{const data=await call(windo
 $('delete-project-cancel').onclick=()=>$('delete-project-dialog').close();$('delete-project-confirm').onclick=action(async()=>{const data=await call(window.aurora.deleteProject(deletingProjectId));$('delete-project-dialog').close();deletingProjectId=null;clearSearch();render(data);renderHistory();toast('Workspace removed. Its sessions are in Default workspace.');});
 document.addEventListener('click',event=>{if(!event.target.closest('.sidebar-context-menu'))document.querySelector('.sidebar-context-menu')?.remove();});document.addEventListener('keydown',event=>{if(event.key==='Escape')document.querySelector('.sidebar-context-menu')?.remove();});
 $('rename-session-cancel').onclick=()=>$('rename-session-dialog').close();$('rename-session-form').onsubmit=event=>{event.preventDefault();action(async()=>{const data=await call(window.aurora.renameSession(editingSessionId,$('rename-session-input').value));$('rename-session-dialog').close();render(data);renderHistory();toast('Session renamed.');})();};
-$('automation-nav').onclick=()=>$('automation-dialog').showModal();$('automation-close').onclick=()=>$('automation-dialog').close();$('automation-plan').onclick=()=>{$('automation-dialog').close();$('prompt').value='Help me plan an automation for this workspace.';$('prompt').focus();};
 $('plugins-nav').onclick=()=>document.getElementById('extensions-open')?.click();$('workspace-search-toggle').onclick=()=>{$('session-search').focus();$('session-search').select();};
 function renderMessages(messages,changedChat=false) {
   const follow=changedChat||pinned(),top=$('messages').scrollTop;$('messages').replaceChildren();
@@ -311,7 +311,7 @@ function renderAgent(){
   portrait.hidden=!!agent.companion;
   if(!agent.companion)portrait.src=agent.avatar;
   pet.hidden=!agent.companion||detached;
-  if(view.mode!=='code'){const paragraph=$('welcome')?.querySelector('p');if(paragraph)paragraph.textContent=`I’m ${agent.name}. Tell me what you’re imagining, and we’ll make it happen together.`;}
+  if(view.mode!=='code'){const paragraph=$('welcome')?.querySelector('p');if(paragraph)paragraph.textContent=`I’m ${agent.name}. ${agent.essence||''} Tell me what we’re working on.`;}
   buildAgentPicker();
 }
 function buildAgentPicker(){
@@ -320,9 +320,9 @@ function buildAgentPicker(){
   for(const agent of view.agents||[]){
     const button=document.createElement('button');button.type='button';button.className='agent-card'+(agent.id===view.agent?' selected':'');button.setAttribute('role','option');button.setAttribute('aria-selected',String(agent.id===view.agent));
     const img=document.createElement('img');img.className='agent-card-avatar';img.src=agent.avatar;img.alt='';img.loading='lazy';
-    const text=document.createElement('span');text.className='agent-card-text';const name=document.createElement('strong');name.textContent=agent.name;const tag=document.createElement('small');tag.textContent=agent.tagline;text.append(name,tag);
+    const text=document.createElement('span');text.className='agent-card-text';const name=document.createElement('strong');name.textContent=agent.name;const tag=document.createElement('small');tag.textContent=agent.tagline;text.append(name,tag);button.title=`${agent.role} · ${agent.focus}`;
     button.append(img,text);
-    button.onclick=action(async()=>{closeAgentPicker();render(await call(window.aurora.agent(agent.id)));renderHistory();toast(`${agent.name} is here.`);});
+    button.onclick=action(async()=>{closeAgentPicker();render(await call(window.aurora.agent(agent.id)));renderHistory();toast(`${agent.name} is here.`);if(agent.id==='gigi')window.AuroraWorkspace?.enter?.();else window.AuroraWorkspace?.close?.();});
     picker.append(button);
   }
 }
@@ -348,7 +348,7 @@ function buildComboPicker(){
     const button=document.createElement('button');button.type='button';button.className='combo-card'+(combo.id===view.combo?' selected':'')+(locked?' locked':'');button.disabled=locked;button.setAttribute('aria-selected',String(combo.id===view.combo));
     const members=document.createElement('span');members.className='combo-card-members';
     for(const id of combo.members){const agent=byId(id);if(!agent)continue;const img=document.createElement('img');img.className='combo-member';img.src=agent.avatar;img.alt='';img.title=agent.name;members.append(img);}
-    const text=document.createElement('span');text.className='combo-card-text';const label=document.createElement('strong');label.textContent=combo.label;const tag=document.createElement('small');tag.textContent=locked?'HFAI Aura members · coming soon':(combo.members.length>1?`Team of ${combo.members.length}`:'Going solo');text.append(label,tag);
+    const text=document.createElement('span');text.className='combo-card-text';const label=document.createElement('strong');label.textContent=combo.label;const tag=document.createElement('small');tag.textContent=locked?'Unlock with an HFAI Aura code':(combo.members.length>1?`Team of ${combo.members.length}`:'Going solo');text.append(label,tag);
     button.append(members,text);
     if(locked){const lock=document.createElement('span');lock.className='combo-card-lock';lock.textContent='🔒';lock.setAttribute('aria-hidden','true');button.append(lock);}
     else button.onclick=action(async()=>{closeComboPicker();render(await call(window.aurora.combo(combo.id)));renderHistory();});
@@ -358,7 +358,7 @@ function buildComboPicker(){
   const customLocked=!view.auraMember;
   const custom=document.createElement('button');custom.type='button';custom.className='combo-card'+((typeof view.combo==='string'&&view.combo.startsWith('custom:'))?' selected':'')+(customLocked?' locked':'');custom.disabled=customLocked;
   const icon=document.createElement('span');icon.className='combo-card-members combo-custom-icon';icon.textContent='＋';icon.setAttribute('aria-hidden','true');
-  const text=document.createElement('span');text.className='combo-card-text';const label=document.createElement('strong');label.textContent='Build your own team';const tag=document.createElement('small');tag.textContent=customLocked?'HFAI Aura members · coming soon':'Pick who works with your waifu';text.append(label,tag);
+  const text=document.createElement('span');text.className='combo-card-text';const label=document.createElement('strong');label.textContent='Build your own team';const tag=document.createElement('small');tag.textContent=customLocked?'Unlock with an HFAI Aura code':'Pick who works with your waifu';text.append(label,tag);
   custom.append(icon,text);
   if(customLocked){const lock=document.createElement('span');lock.className='combo-card-lock';lock.textContent='🔒';lock.setAttribute('aria-hidden','true');custom.append(lock);}
   else custom.onclick=()=>{customSelection=[...(view.custom||[])];comboBuilding=true;buildComboPicker();};
@@ -393,21 +393,13 @@ $('composer-combo').onclick=()=>{closeAgentPicker();const picker=$('combo-picker
 document.addEventListener('click',event=>{const path=event.composedPath?event.composedPath():[];if(!path.some(node=>node&&(node.id==='combo-picker'||node.id==='composer-combo')))closeComboPicker();});
 document.addEventListener('keydown',event=>{if(event.key==='Escape')closeComboPicker();});
 
-const HEARTFLOW_LINKS={website:'https://heartflowai.net/',x:'https://x.com/HeartFlowAI',telegram:'https://t.me/HFAICommunity',discord:'https://discord.gg/au3jbSJf3C',github:'https://github.com/HeartFlowAI',token:'https://pump.fun/coin/5RodQQJ5e3kv4z3E8P8E3wo79fSRZBRr43Ht455hpump'};
-function openExternal(url){window.aurora.openLink(url).then(result=>{if(!result.ok)toast(result.error);});}
-for(const [id,url] of [['link-website',HEARTFLOW_LINKS.website],['link-x',HEARTFLOW_LINKS.x],['link-telegram',HEARTFLOW_LINKS.telegram],['link-github',HEARTFLOW_LINKS.github],['link-token',HEARTFLOW_LINKS.token],['link-discord',HEARTFLOW_LINKS.discord]]){
-  const button=$(id);if(!button)continue;
-  if(!url){button.hidden=true;continue;}
-  button.onclick=()=>openExternal(url);
-}
 document.querySelectorAll('[data-prompt]').forEach(button => button.onclick = () => { $('prompt').value = button.dataset.prompt; $('prompt').focus(); });
 $('stop').onclick = action(() => call(window.aurora.stop()));
 $('new-chat').onclick = action(async () => { clearSearch();render(await call(window.aurora.newChat())); renderHistory(); });
 $('sidebar-collapse').addEventListener('click', event => { event.stopPropagation(); $('sidebar-toggle').click(); });
 $('workspace').onclick = action(async () => render(await call(window.aurora.workspace())));
-$('detach').onclick = action(() => call(window.aurora.pet(detached ? 'dock' : 'detach')));
-$('roam').onclick = action(() => call(window.aurora.pet('roam')));
-$('desktop-toggle').onclick = action(() => call(window.aurora.pet(detached ? 'dock' : 'detach')));
+$('pet-roam').onclick = action(() => call(window.aurora.pet('roam')));
+$('pet-desktop').onclick = action(() => call(window.aurora.pet(detached ? 'dock' : 'detach')));
 function renderSearchFolders() {
   $('search-folders').replaceChildren();
   for (const root of view.searchRoots || []) {
@@ -427,7 +419,8 @@ function selectProvider() {
   $('settings-status').textContent = '';
 }
 function connectionValues() { return {provider:$('llm-provider').value,key:$('api-key').value,model:$('model').value,baseUrl:$('local-url').value}; }
-function openSettings() { $('llm-provider').value=view.provider;selectProvider();$('computer-enabled').checked=view.computerEnabled!==false;renderSearchFolders();$('settings-dialog').showModal(); }
+function renderAura() { const active=view.auraMember===true;$('aura-status').textContent=active?`Active${view.auraKey?' · '+view.auraKey:''}. Teams and the custom team builder are unlocked.`:'Not active. Unlock multi-waifu teams and the custom team builder with an Aura code.';$('aura-unlock').hidden=active;$('aura-lock').hidden=!active;$('aura-code').hidden=active;$('aura-code').value=''; }
+function openSettings() { $('llm-provider').value=view.provider;selectProvider();$('computer-enabled').checked=view.computerEnabled!==false;renderAura();renderSearchFolders();$('settings-dialog').showModal(); }
 $('preferences-open').onclick=()=>{
   $('preferences-model').textContent=view.connections[view.provider].name+(view.model?` · ${view.model}`:' · Not connected');
   $('preferences-appearance').textContent=view.appearances.find(item=>item.id===view.appearance)?.name||'Classic';
@@ -442,17 +435,31 @@ $('settings-open').onclick = openSettings; $('settings-close').onclick = () => $
 $('fetch-models').onclick = async () => { const values=connectionValues();$('fetch-models').disabled = true; $('settings-status').textContent = 'Checking your connection…'; try { const models = await call(window.aurora.models(values));if($('llm-provider').value!==values.provider)return; $('models').replaceChildren(); for (const model of models) { const option = document.createElement('option'); option.value = model; $('models').append(option); } $('settings-status').textContent = `Connected. ${models.length} models available. Choose a tool-capable model.`; } catch (error) { $('settings-status').textContent = error.message; } finally { $('fetch-models').disabled = false; } };
 $('settings-form').onsubmit = async event => { event.preventDefault(); try { render(await call(window.aurora.saveSettings({ ...connectionValues(),computerEnabled:$('computer-enabled').checked }))); $('api-key').value = ''; $('settings-dialog').close(); toast('Connection saved. Aurora is ready.'); } catch (error) { $('settings-status').textContent = error.message; } };
 $('forget-key').onclick = action(async () => { render(await call(window.aurora.saveSettings({ ...connectionValues(),key:'',forgetKey:true }))); $('api-key').value = ''; $('key-help').textContent = 'Saved key removed.'; });
+$('aura-unlock').onclick = action(async () => { render(await call(window.aurora.auraUnlock($('aura-code').value))); renderAura(); toast('HFAI Aura unlocked. Teams are ready.'); });
+$('aura-lock').onclick = action(async () => { render(await call(window.aurora.auraLock())); renderAura(); toast('HFAI Aura locked.'); });
 function renderAppearances() {
   $('appearance-cards').replaceChildren();
   for (const appearance of view.appearances) {
     const button = document.createElement('button');button.className='appearance-card';button.setAttribute('aria-pressed',String(view.appearance===appearance.id));
     const image = document.createElement(appearance.atlas?'canvas':'img');image.className='skin-preview';image.dataset.appearance=appearance.id;
-    if(appearance.atlas){image.width=150;image.height=160;image.setAttribute('aria-hidden','true');const atlas=new Image();atlas.onload=()=>{const prepared=AuroraSpriteFrames.prepareFrame(atlas,window.AuroraAppearances.frameRect(appearance,0,atlas.naturalWidth,atlas.naturalHeight)),[x,y,w,h]=prepared.bounds;const ctx=image.getContext('2d');ctx.imageSmoothingEnabled=false;const scale=Math.min(image.width/w,image.height/h);ctx.drawImage(prepared.canvas,x,y,w,h,(image.width-w*scale)/2,image.height-h*scale,w*scale,h*scale);};atlas.src=appearance.atlas;}else{image.src='assets/aurora/reference.png';image.alt='';}
+    if(appearance.atlas){image.width=150;image.height=160;image.setAttribute('aria-hidden','true');const atlas=new Image();atlas.onload=()=>{const prepared=AuroraSpriteFrames.prepareFrame(atlas,window.AuroraAppearances.frameRect(appearance,0,atlas.naturalWidth,atlas.naturalHeight)),[x,y,w,h]=prepared.bounds;const ctx=image.getContext('2d');ctx.imageSmoothingEnabled=false;const scale=Math.min(image.width/w,image.height/h);ctx.drawImage(prepared.canvas,x,y,w,h,(image.width-w*scale)/2,image.height-h*scale,w*scale,h*scale);};atlas.src=appearance.atlas;}else{image.src='assets/aurora/reference.png';image.alt='';if(appearance.filter&&appearance.filter!=='none')image.style.filter=appearance.filter;}
     const name=document.createElement('strong');name.textContent=appearance.name;const description=document.createElement('small');description.textContent=appearance.description;
     button.append(image,name);if(appearance.creator){const credit=document.createElement('small');credit.className='appearance-credit';credit.textContent=`Created by ${appearance.creator}`;button.append(credit);}button.append(description);button.onclick=action(async()=>{render(await call(window.aurora.appearance(appearance.id)));renderAppearances();$('appearance-status').textContent=`${appearance.name} selected.`;});$('appearance-cards').append(button);
   }
 }
 $('appearance-open').onclick=()=>{renderAppearances();$('appearance-status').textContent='';$('appearance-dialog').showModal();};$('appearance-close').onclick=()=>$('appearance-dialog').close();
+function renderThemes() {
+  $('theme-cards').replaceChildren();
+  for (const theme of view.themes || []) {
+    const button=document.createElement('button');button.type='button';button.className='theme-card';button.setAttribute('aria-pressed',String(view.theme===theme.id));
+    const swatches=document.createElement('div');swatches.className='theme-swatches';for(const color of theme.swatches||[]){const swatch=document.createElement('span');swatch.style.background=color;swatches.append(swatch);}
+    const name=document.createElement('strong');name.textContent=theme.name;const description=document.createElement('small');description.textContent=theme.description;
+    button.append(swatches,name,description);
+    button.onclick=action(async()=>{render(await call(window.aurora.theme(theme.id)));renderThemes();$('theme-status').textContent=`${theme.name} theme applied.`;});
+    $('theme-cards').append(button);
+  }
+}
+$('theme-open').onclick=()=>{renderThemes();$('theme-status').textContent='';$('theme-dialog').showModal();};$('theme-close').onclick=()=>$('theme-dialog').close();
 let updateState;
 function renderUpdates(value) {
   if (!value) return; updateState=value;
@@ -504,7 +511,7 @@ window.aurora.onEvent(event => {
     case 'approval': {
       approvalId=event.id;const external=event.name==='mcp',write=event.name==='write_file';
       $('approval-title').textContent=external?'May I use this external tool?':write?'May I write this file?':'May I run this command?';
-      $('approval-description').textContent=external?`${event.args.server} · ${event.args.tool}\n${event.args.endpoint}\nReview the arguments before sending them to this server.`:write?`Create or replace ${event.args.path} in your selected workspace.`:'PowerShell runs with your Windows user permissions. It can access files and services outside the workspace. Review the command before approving.';
+      $('approval-description').textContent=external?`${event.args.server} · ${event.args.tool}\n${event.args.endpoint}\nReview the arguments before sending them to this server.`:write?`Create or replace ${event.args.path} in your selected workspace.`:'PowerShell runs with your user permissions. It can access files and services outside the workspace. Review the command before approving.';
       $('approval-content').textContent=external?JSON.stringify(event.args.arguments,null,2):write?event.args.content:event.args.command;
       document.querySelectorAll('dialog.settings-workspace[open]').forEach(dialog=>dialog.close());$('approval-dialog').showModal();break;
     }

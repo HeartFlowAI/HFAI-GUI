@@ -1,0 +1,29 @@
+:root{color-scheme:dark;--bg:#0a0812;--panel:#1a1424;--line:rgba(255,255,255,.08);--line-strong:rgba(255,255,255,.14);--text:#f4f4f8;--muted:#a6a6b6;--faint:#78788a;--accent:#ff3fce;--accent-soft:#ffd2f3;font-family:'Segoe UI',system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-size:13px;height:100vh;display:flex;flex-direction:column}
+header{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--line)}
+header strong{font-size:15px;font-weight:600}
+header span{flex:1;color:var(--faint);font-size:11px}
+header button{width:28px;height:28px;border:1px solid var(--line-strong);border-radius:8px;background:var(--panel);color:var(--muted);font-size:13px}
+header button:hover{background:var(--accent-deep);color:var(--accent-soft)}
+main{flex:1;overflow:auto;padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+.total{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:14px}
+.total strong{display:block;font-size:26px;font-variant-numeric:tabular-nums}
+.total small{color:var(--muted);font-size:11px}
+.subhead{font-size:10px;letter-spacing:1.2px;color:var(--faint)}
+.list{display:flex;flex-direction:column;gap:6px}
+.row{position:relative;display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:10px 12px;overflow:hidden}
+.row .name{display:flex;flex-direction:column;gap:2px;min-width:0}
+.row .name strong{font-size:13px}
+.row .name small,.row .val small{color:var(--muted);font-size:10px}
+.row .val{display:flex;flex-direction:column;gap:2px;text-align:right}
+.row .val strong{font-variant-numeric:tabular-nums;font-size:13px}
+.share{position:absolute;left:0;bottom:0;height:2px;width:100%;background:var(--line)}
+.share i{display:block;height:100%;background:var(--accent)}
+.search input{width:100%;border:1px solid var(--line-strong);background:var(--panel);color:var(--text);border-radius:8px;padding:9px 11px;font-size:12px}
+.result{display:flex;justify-content:space-between;gap:8px;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:8px 10px;font-size:12px}
+.result small{color:var(--muted);font-size:10px}
+.empty{color:var(--faint);font-size:12px}
+.chart{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:10px 12px;color:var(--accent)}
+.chart-label{font-size:10px;letter-spacing:.6px;color:var(--faint);margin-bottom:6px}
+.spark{width:100%;height:44px;display:block;color:var(--accent)}

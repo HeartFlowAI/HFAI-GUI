@@ -12,6 +12,6 @@ async function command(value){
     stream.getAudioTracks()[0].onended=()=>{if(current===generation)window.microphone.send({type:'error',message:'The microphone disconnected. Enable listening to retry.'});};
   }
   window.microphone.send({type:'ack',id:value.id});
- }catch(error){await stop();window.microphone.send({type:'ack',id:value.id,error:'Could not open the microphone. Check the selected device and Windows microphone permissions.'});}
+ }catch(error){await stop();window.microphone.send({type:'ack',id:value.id,error:'Could not open the microphone. Check the selected device and system microphone permissions.'});}
 }
 window.microphone.onCommand(value=>{commands=commands.then(()=>command(value));});window.addEventListener('beforeunload',()=>{stream?.getTracks().forEach(track=>track.stop());});

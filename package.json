@@ -1,9 +1,9 @@
 {
   "name": "heartflow-aurora",
   "productName": "Heartflow Aurora",
-  "version": "0.5.0",
+  "version": "0.5.2",
   "private": true,
-  "description": "A Windows AI companion with voice, desktop tools and a choice of model providers",
+  "description": "A desktop AI companion with voice, desktop tools, a Solana trading workspace and a choice of model providers",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
@@ -14,6 +14,7 @@
     "pack": "electron-builder --dir --publish never",
     "dist": "electron-builder --win nsis --publish never",
     "dist:portable": "electron-builder --win portable --publish never",
+    "dist:mac": "electron-builder --mac dmg zip --publish never",
     "clean:builds": "node scripts/clean-builds.js",
     "verify:release": "node scripts/verify-release.js"
   },
@@ -42,6 +43,13 @@
       "icon": "src/assets/brand/heartflow.ico",
       "signExecutable": false
     },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.finance"
+    },
     "nsis": {
       "artifactName": "Heartflow-Aurora-Setup-${version}.${ext}",
       "oneClick": false,
@@ -61,6 +69,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1",
+    "@walletconnect/sign-client": "^2.26.0",
     "electron-updater": "^6.8.9",
     "ws": "^8.22.0"
   },

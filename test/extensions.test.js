@@ -6,6 +6,15 @@ test('plugins migrate enabled, preserve disabled groups and retain core question
   const data={plugins:{desktop:false}};normalize(data);
   assert.equal(allowed(data,'computer'),false);assert.equal(allowed(data,'read_file'),true);assert.equal(allowed(data,'ask_user_question'),true);
 });
+test('wallet and trading tools belong to Gigi only',()=>{
+  const data={};normalize(data);
+  assert.equal(allowed(data,'paper_buy','gigi'),true);
+  assert.equal(allowed(data,'trade_execute','gigi'),true);
+  assert.equal(allowed(data,'paper_buy','aurora'),false);
+  assert.equal(allowed(data,'strategy_run','nova'),false);
+  assert.equal(allowed(data,'read_file','aurora'),true);
+  assert.equal(allowed(data,'web_search','clara'),true);
+});
 test('MCP validates endpoints and direct executables without accepting URL secrets or shell files',()=>{
   for(const url of ['http://remote.example/mcp','https://user:password@example.com/mcp','https://example.com/mcp?token=secret'])assert.throws(()=>serverConfig({name:'Test',transport:'http',url}));
   assert.equal(serverConfig({name:'Test',transport:'http',url:'http://localhost:3000/mcp'}).url,'http://localhost:3000/mcp');

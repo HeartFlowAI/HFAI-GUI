@@ -3,6 +3,7 @@ const path=require('node:path');
 const {keepOverlayOnTop}=require('./overlay-window');
 const {createAgentCursor}=require('./agent-cursor');
 function createInputOverlay(){
+  if(process.platform!=='win32')return {activity(){},hide(){},dispose(){},prepare:()=>Promise.resolve()};
   let hud,hudLayer,timer,last,disposed=false;const pointer=createAgentCursor();
   function window(kind){const win=new BrowserWindow({width:440,height:94,frame:false,transparent:true,alwaysOnTop:true,skipTaskbar:true,focusable:false,resizable:false,hasShadow:false,show:false,webPreferences:{sandbox:true,nodeIntegration:false,contextIsolation:true,backgroundThrottling:false}});win.setIgnoreMouseEvents(true);win.webContents.setWindowOpenHandler(()=>({action:'deny'}));win.webContents.on('will-navigate',e=>e.preventDefault());win.loadFile(path.join(__dirname,'input-overlay.html'),{query:{kind}});return win;}
   function hide(){if(disposed)return;pointer.restore();if(hud&&!hud.isDestroyed())hud.hide();}

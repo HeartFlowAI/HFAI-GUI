@@ -61,7 +61,9 @@ document.querySelectorAll('.pet-host').forEach(host => {
   const originalFrames=[],walkFrames=[];let originalPoint;
   const resize = () => {
     const ratio = devicePixelRatio || 1;
-    sprite.width = Math.round(host.clientWidth * ratio); sprite.height = Math.round(host.clientHeight * ratio);
+    const width = Math.round(host.clientWidth * ratio), height = Math.round(host.clientHeight * ratio);
+    if (sprite.width === width && sprite.height === height) return;
+    sprite.width = width; sprite.height = height;
     dirty = true;
   };
   new ResizeObserver(resize).observe(host);

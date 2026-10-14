@@ -2,11 +2,12 @@ const {createHash}=require('node:crypto');
 const groups=[
   {id:'files',name:'Files & workspace',description:'Read project files, search filenames and show results in Explorer.',tools:['find_files','reveal_file','list_files','read_file','write_file']},
   {id:'web',name:'Web research',description:'Search the web using your saved Ollama Cloud connection.',tools:['web_search']},
-  {id:'desktop',name:'Computer control',description:'Open supported apps and use their observed controls.',tools:['computer','open_application']},
-  {id:'shell',name:'PowerShell',description:'Run commands after your approval. Commands are not sandboxed.',tools:['run_powershell']}
+  {id:'desktop',name:'Computer control',description:'Open apps and web pages, control music playback, and use observed controls on Windows.',tools:['computer','open_application','control_media']},
+  {id:'shell',name:'PowerShell',description:'Run commands after your approval. Commands are not sandboxed.',tools:['run_powershell']},
+  {id:'wallet',owner:'gigi',name:'Wallet & markets',description:'Read the user\'s Solana holdings, look up tokens and place simulated paper trades. Read-only; paper only. Gigi only.',tools:['wallet_summary','wallet_holdings','wallet_token','wallet_history','market_discover','token_safety','paper_buy','paper_sell','paper_condition','strategy_list','strategy_create','strategy_status','strategy_run','trade_preview','trade_execute','session_pause','session_resume']}
 ];
 function normalize(data){data.plugins=Object.fromEntries(groups.map(g=>[g.id,data.plugins?.[g.id]!==false]));data.mcpServers=Array.isArray(data.mcpServers)?data.mcpServers.filter(s=>s&&typeof s.id==='string').slice(0,12):[];}
-function allowed(data,name){const group=groups.find(g=>g.tools.includes(name));return !group||data.plugins[group.id]!==false;}
+function allowed(data,name,agent){const group=groups.find(g=>g.tools.includes(name));if(!group)return true;if(group.owner&&agent&&agent!==group.owner)return false;return data.plugins[group.id]!==false;}
 function serverConfig(value){
   if(!value||typeof value.name!=='string'||!value.name.trim()||value.name.length>80)throw Error('Enter a server name under 80 characters.');
   if(!['http','stdio'].includes(value.transport))throw Error('Choose an MCP transport.');

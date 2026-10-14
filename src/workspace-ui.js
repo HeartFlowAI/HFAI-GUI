@@ -35,9 +35,6 @@
   foldProjects(preferences.projects === true); toggle.onclick = () => foldProjects(!preferences.projects);
   byId('project-add').addEventListener('click', () => foldProjects(false));
   const section = companion.querySelector(':scope > .section-label'); section.textContent = 'YOUR WAIFU';
-  const companionTop = document.createElement('div'); companionTop.className = 'companion-top';
-  const appearance = document.createElement('button'); appearance.textContent = 'Appearance'; appearance.onclick = () => byId('appearance-open').click();
-  section.replaceWith(companionTop); companionTop.append(section, appearance);
   companion.querySelector('.activity-heading .section-label').textContent = 'ACTIVITY';
   document.addEventListener('keydown', event => {
     if (document.querySelector('dialog[open]') || event.altKey) return;
@@ -49,5 +46,6 @@
       event.preventDefault(); panel('sidebar', false); byId('session-search').focus(); byId('session-search').select();
     }
   });
-  byId('session-search').placeholder = 'Search sessions · Ctrl+K';
+  const isMac=/mac/i.test(navigator.platform||navigator.userAgent);
+  byId('session-search').placeholder = `Search sessions · ${isMac?'Cmd+K':'Ctrl+K'}`;
 })();

@@ -1,0 +1,38 @@
+/* Whole-app themes. Loaded after the base styles so each palette wins over the
+   default surfaces. Heartflow matches the original look. */
+body[data-theme="heartflow"]{--bg:#0a0812;--sidebar-bg:linear-gradient(180deg,#14101d,#0a080f);--companion-bg:linear-gradient(180deg,#131019,#09080e);--panel:#1a1424;--panel-2:#241b30;--line:rgba(255,255,255,.08);--line-strong:rgba(255,255,255,.14);--text:#f4f4f8;--muted:#a6a6b6;--faint:#78788a;--accent:#ff3fce;--accent-2:#8b7bff;--accent-deep:rgba(255,63,206,.16);--accent-soft:#ffd2f3;--accent-mute:#e0a0e8;--accent-ink:#2a0630;--glow:0 0 26px rgba(255,63,206,.4)}
+body[data-theme="midnight"]{--bg:#070b16;--sidebar-bg:linear-gradient(180deg,#0d1526,#070b16);--companion-bg:linear-gradient(180deg,#0c1423,#060a14);--panel:#0f1a2e;--panel-2:#152340;--line:rgba(140,180,255,.12);--line-strong:rgba(140,180,255,.2);--text:#eef3ff;--muted:#9fb0cc;--faint:#6b7d9c;--accent:#4f8cff;--accent-2:#38d0ff;--accent-deep:rgba(79,140,255,.18);--accent-soft:#cfe0ff;--accent-mute:#a9c4ff;--accent-ink:#061428;--glow:0 0 26px rgba(79,140,255,.4)}
+body[data-theme="ember"]{--bg:#140b09;--sidebar-bg:linear-gradient(180deg,#1e100c,#140b09);--companion-bg:linear-gradient(180deg,#1c0f0b,#0f0806);--panel:#26130d;--panel-2:#341a11;--line:rgba(255,180,120,.12);--line-strong:rgba(255,180,120,.2);--text:#fdf2ea;--muted:#d3b6a4;--faint:#a0826f;--accent:#ff8a3d;--accent-2:#ff4d6d;--accent-deep:rgba(255,138,61,.18);--accent-soft:#ffdcc4;--accent-mute:#ffb98a;--accent-ink:#2a1004;--glow:0 0 26px rgba(255,138,61,.4)}
+body[data-theme="mint"]{--bg:#07120f;--sidebar-bg:linear-gradient(180deg,#0c1c17,#07120f);--companion-bg:linear-gradient(180deg,#0b1a15,#06100d);--panel:#0d221b;--panel-2:#123028;--line:rgba(120,255,210,.12);--line-strong:rgba(120,255,210,.2);--text:#eafff8;--muted:#a3c9bd;--faint:#6f9188;--accent:#2fe0a6;--accent-2:#5ad1ff;--accent-deep:rgba(47,224,166,.18);--accent-soft:#c6ffe9;--accent-mute:#8df0cd;--accent-ink:#052017;--glow:0 0 26px rgba(47,224,166,.4)}
+
+body{background:var(--bg)}
+.sidebar,body.vibrancy .sidebar{background:var(--sidebar-bg)}
+header,body.vibrancy header{background:var(--sidebar-bg)}
+.session-toolbar,body.vibrancy .session-toolbar{background:var(--sidebar-bg)}
+.companion,body.vibrancy .companion{background:var(--companion-bg)}
+#composer,body.vibrancy #composer{background:var(--panel);border-color:var(--line-strong)}
+dialog{background:var(--panel);border-color:var(--line-strong)}
+dialog input,#mcp-args{background:var(--bg);color:var(--text);border-color:var(--line-strong)}
+.new-chat{background:var(--panel-2);border-color:var(--line-strong);color:var(--accent-soft)}
+.workspace-control,.session-toolbar select,.session-search,.model-picker-search{background:var(--panel);border-color:var(--line-strong);color:var(--text)}
+.primary{background:var(--accent);color:var(--accent-ink)}
+#send{background:var(--accent);color:var(--accent-ink)}
+.suggestions button{background:var(--panel);border-color:var(--line)}
+.chat-link.active,.project-link.active,.session-row.selected,.session-row:hover,.session-row:focus-within{background:var(--accent-deep);color:var(--accent-soft)}
+.activity-item{background:var(--panel)}
+.status-dot{background:var(--accent)}
+.eyebrow,.appearance-credit{color:var(--accent-mute)}
+dialog label{color:var(--accent-soft)}
+.preference-icon{background:var(--panel-2);color:var(--accent-soft)}
+.appearance-card[aria-pressed=true],.connection-card.active{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.settings-nav button.selected{background:var(--accent-deep);color:var(--accent-soft)}
+#stop{background:var(--panel-2);color:var(--accent-soft)}
+.session-menu summary:hover,.library-actions button:hover,.sidebar-action:hover{background:var(--accent-deep);color:var(--accent-soft)}
+
+.theme-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:20px 0}
+.theme-card{display:flex;flex-direction:column;gap:10px;padding:14px;border:1px solid var(--line-strong);border-radius:14px;background:var(--panel);color:var(--text);text-align:left;cursor:pointer}
+.theme-card[aria-pressed=true]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.theme-card strong{font-size:13px}
+.theme-card small{color:var(--muted);font-size:11px}
+.theme-swatches{display:flex;gap:6px}
+.theme-swatches span{width:22px;height:22px;border-radius:6px;border:1px solid rgba(255,255,255,.15)}
