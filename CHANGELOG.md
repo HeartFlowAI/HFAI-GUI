@@ -1,5 +1,61 @@
 # Changelog
 
+## 0.6.0 — Heartflow Aurora (2026-10-15)
+
+This release rolls up everything built in today's session: Gigi's whole Solana desk, the data layer that makes it live, the Instinct-inspired taste pass, plus the platform work (macOS computer use, automations, themes, membership) that landed alongside it.
+
+### Gigi's Solana desk
+
+A full trading workspace that belongs to Gigi and Gigi alone. It mounts inside the main column so the app sidebar stays, opens when you pick Gigi and closes when you pick another sister, and slides in with a short animation.
+
+- Sections: **Canvas**, **Portfolio**, **Trade**, **Discover**, **Research**, **Strategies** and **Journal**, driven by a tab bar with keyboard navigation.
+- A **command palette** (⌘K) for jumping between sections and firing quick actions, plus a searchable token field.
+- The chat is reparented into a **resizable, collapsible panel** on the right, and your desk preferences persist between sessions.
+
+### Live data, with or without a wallet
+
+- A curated **markets feed** (SOL, USDC, USDT, BONK, WIF, JUP, RAY, PYTH, JTO, mSOL, JitoSOL, bSOL) is priced continuously through Jupiter, so Discover, Trade and the Markets list are populated the moment the desk opens, even before a wallet is connected.
+- Price polling **batches Jupiter requests** and **drops unpriced spam tokens**, so a wallet full of airdrops values correctly instead of collapsing to zero.
+- **Chart history** comes from **Binance klines** for majors, with a throttled, retried CoinGecko fallback for the rest. Histories are cached in memory and sliced locally, so switching ranges is instant after the first load.
+- **Real holders** come from **RugCheck**: holder count, top-account concentration and risk flags, replacing the rate-limited public RPC.
+- Fixed the **DexScreener pair lookup** that had been pointing at the wrong endpoint and leaving Trade price, liquidity, volume and market cap blank.
+
+### Portfolio and Trade
+
+- **Portfolio performance** charts the value of your holdings over **1D, 7D, 30D, 3M, 6M, 1Y and All time**, aggregated across tokens by forward-filling each holding's price onto a shared time grid. It replaces the old single-token price chart.
+- Portfolio also shows an **allocation donut**, a sortable and filterable **holdings table** with sparklines and estimated profit since Aurora started watching, the **paper portfolio**, and a watchlist.
+- **Trade** was rebuilt around a proper ranged price chart, a full metric row (liquidity, 24h volume, market cap, 24h move, mint and freeze safety), the token name, and **Watch** and **Holders** actions.
+- Paper trading lives in Trade: presets, slippage, an Advanced disclosure for **conditional orders**, and estimated output before fees.
+
+### The AI market canvas and the local take on Instinct
+
+- Gigi can render typed **views** onto the canvas with the `show_view` tool: line, area and bar charts, holder breakdowns, metric grids, tables, lists, notes and thesis cards. You can pin or remove any view.
+- A **thesis builder** for multi-leg trades: long, hedge and short legs with rationale, sizing and exits. Long legs run in paper, and any thesis can be copied out as a clean **call card**.
+- **Signal rules**: watch a price condition, optionally gated on a fresh research report, and fire a notification or place a small paper buy, with a cooldown and an enable toggle. Gigi creates them with `signal_create` and lists them with `signal_list`.
+- **Research** runs as jobs with saved revisions and a cancel action, and its latest report is injected into Gigi's context so she reasons from evidence.
+- **Strategies** support typed conditions, AND/OR, sizing, cooldown, exits and limits, and can run automatically in paper.
+
+### The full trading spine
+
+- Read-only multi-address wallet view, **WalletConnect** connect and sign, and a **local bot vault** (ed25519 keys encrypted with safeStorage).
+- A session **state machine** for pause, exit and reconcile, plus **live swaps** with preview, simulate, confirm, reconcile and an executions journal.
+
+### Design and themes
+
+- An **Instinct-inspired, Apple-leaning rebuild** of the desk: whitespace over borders, a new type scale (`--t-hero`), a restrained accent, a custom inline-SVG **icon set**, a chart-led Portfolio, an airy Trade view, and borderless lists with hairline separators.
+- Four whole-app **themes**: Heartflow (default), Midnight, Ember and Mint.
+- **Sidebar refresh**: removed the old Heartflow links cluster and rebuilt a cleaner expanded sidebar with a 64px collapsed icon rail, tooltips and an accent active bar.
+
+### Platform, system and membership
+
+- **macOS computer use**: open any app by name or a URL, with friendly aliases, plus media playback control.
+- **Voice** defaults to cloud on non-Windows platforms, with Windows-only options hidden.
+- **Automations**: minute, daily, weekday and weekly schedules that run in their own session, durably, unattended.
+- **HFAI Aura membership**: locally verified HMAC unlock codes with a Settings field.
+- Sister identities: **Aurora** (vibe coding), **Gigi** (markets), **Nova** (systems), **Clara** (mind), with a shared toolkit.
+- Pet settings (outfit picker and desktop toggle) moved into Settings, leaving the companion panel clean.
+- A **macOS build target** (`npm run dist:mac`) and `docs/TRADING-WORKSPACE.md`.
+
 ## 0.5.4 — Heartflow Aurora (2026-10-15)
 
 - Gigi's desk now has data the moment it opens. A small **live markets feed** (SOL, USDC, USDT, BONK, WIF, JUP, RAY, PYTH, JTO, mSOL, JitoSOL, bSOL) is priced continuously, with or without a wallet connected, so Discover, Trade and the Markets list are never empty.
