@@ -1,4 +1,4 @@
-const { fetchMintSafety } = require('./solana');
+const { fetchMintSafety, rpcCall, DEFAULT_RPC } = require('./solana');
 
 // Public, key-free endpoints. Kept as constants so they can be swapped or
 // upgraded to Helius/Birdeye later without touching callers.
@@ -55,4 +55,18 @@ async function tokenSafety(mint, options = {}) {
   const level = flags.length === 0 ? 'ok' : flags.length === 1 ? 'caution' : 'risk';
   return { known: true, level, flags, mintRevoked: safety.mintRevoked, freezeRevoked: safety.freezeRevoked };
 }
-module.exports = { JUPITER_PRICE, DEXSCREENER, jupiterPrices, searchTokens, pairForToken, tokenSafety };
+// Top accounts by balance. This is the largest-account list, not unique holders,
+// and pools are not excluded; label it honestly in the UI.
+async function holders(mint, { rpc = DEFAULT_RPC, fetchImpl = fetch, signal } = {}) {
+  const [supply, largest] = await Promise.all([
+    rpcCall(rpc, 'getTokenSupply', [mint], { fetchImpl, signal }).catch(() => null),
+    rpcCall(rpc, 'getTokenLargestAccounts', [mint], { fetchImpl, signal }).catch(() => null)
+  ]);
+  const total = Number(supply?.value?.uiAmount || 0) || 0;
+  const accounts = (largest?.value || []).slice(0, 20).map(entry => {
+    const amount = Number(entry.uiAmount || 0) || 0;
+    return { address: entry.address || '', amount, pct: total > 0 ? (amount / total) * 100 : 0 };
+  });
+  return { mint, total, top1: accounts[0]?.pct || 0, top10: accounts.slice(0, 10).reduce((sum, entry) => sum + entry.pct, 0), accounts };
+}
+module.exports = { JUPITER_PRICE, DEXSCREENER, jupiterPrices, searchTokens, pairForToken, tokenSafety, holders };

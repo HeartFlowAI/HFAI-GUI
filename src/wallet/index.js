@@ -4,6 +4,9 @@ const providers = require('./providers');
 const paperModule = require('./paper');
 const strategyModule = require('./strategy');
 const sessionModule = require('./session');
+const viewsModule = require('../views');
+const thesisModule = require('../thesis');
+const signalsModule = require('../signals');
 
 const MAX_POINTS = 240;
 function sanitizeHistory(input) {  if (!input || typeof input !== 'object' || Array.isArray(input)) return {};
@@ -81,14 +84,17 @@ function normalizeConfig(input) {
     limits: normalizeLimits(source.limits),
     executions: sanitizeExecutions(source.executions),
     session: sessionModule.normalizeSession(source.session),
-    vault: sanitizeVault(source.vault)
+    vault: sanitizeVault(source.vault),
+    views: viewsModule.normalizeViews(source.views),
+    theses: thesisModule.normalizeTheses(source.theses),
+    signals: signalsModule.normalizeSignals(source.signals)
   };
 }
 function shortMint(mint) { return typeof mint === 'string' && mint.length > 10 ? `${mint.slice(0, 4)}…${mint.slice(-4)}` : String(mint || ''); }
 function emptyState(now) {
   return { loading: false, error: '', updated: now, watching: false, total: 0, change24h: 0, holdings: [], watchlist: [], alerts: [] };
 }
-function createWalletManager({ config, fetchImpl = fetch, onUpdate = () => {}, onAlert = () => {}, onSamples = () => {}, onIntent = () => {}, intervalMs = 60000, now = () => Date.now() } = {}) {
+function createWalletManager({ config, fetchImpl = fetch, onUpdate = () => {}, onAlert = () => {}, onSamples = () => {}, onIntent = () => {}, onSignal = () => {}, freshResearch = () => true, intervalMs = 60000, now = () => Date.now() } = {}) {
   let timer = null, disposed = false;
   const fired = new Set();
   const lastPrices = {};
@@ -155,6 +161,9 @@ function createWalletManager({ config, fetchImpl = fetch, onUpdate = () => {}, o
         const hit = alert.direction === 'above' ? price >= alert.price : price <= alert.price;
         if (hit && !fired.has(alert.id)) { fired.add(alert.id); alert.triggeredAt = now(); onAlert({ ...alert, symbol: shortMint(alert.mint), current: price }); }
       }
+      const firedSignals = running ? signalsModule.runSignals(config.signals, (mint, windowMinutes) => signals(mint, windowMinutes), { now: now(), freshResearch }) : [];
+      for (const hit of firedSignals) { try { onSignal(hit.rule, hit.signals); } catch {} }
+      if (firedSignals.length) recorded = true;
       Object.assign(state, { loading: false, error: '', updated: now(), watching, total, change24h, holdings, watchlist, alerts: alertsView() });
       if (recorded) { try { onSamples(samples); } catch {} }
     } catch (error) {

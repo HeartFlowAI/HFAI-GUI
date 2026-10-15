@@ -42,11 +42,14 @@ const strategy=require('./wallet/strategy');
 const swap=require('./wallet/swap');
 const session=require('./wallet/session');
 const vault=require('./wallet/vault');
+const views=require('./views');
+const thesisModel=require('./thesis');
+const signals=require('./signals');
 const {expressions,pickExpression,verifiedMusicCompletion}=require('./voice-expression');
 let speechExpressionTimer,speechExpressionId;
 let inputOverlay,computerControl,computerActive=false;
 let automationActive=false,automationTimer;
-let wallet,walletWindow=null,solanaConnect;
+let wallet,walletWindow=null,solanaConnect,activeView=null;
 const WINDOWS_ONLY_TOOLS=new Set(['computer','run_powershell']);
 async function beginComputer(){if(!computerActive){computerActive=true;emit({type:"computer-activity",active:true});if(voiceSession?.active&&!mainWindow.isMinimized())mainWindow.minimize();await new Promise(resolve=>setTimeout(resolve,300));}}
 function endComputer(){computerActive=false;emit({type:"computer-activity",active:false});}
@@ -203,7 +206,7 @@ function snapshot() {
 function walletView() {
   if (!data || !data.wallet) return null;
   const state = wallet ? wallet.snapshot() : null;
-  return { config: { ...data.wallet }, state: state ? { loading: state.loading, error: state.error, updated: state.updated, watching: state.watching, total: state.total, change24h: state.change24h, holdings: state.holdings, watchlist: state.watchlist, alerts: state.alerts } : null, wc: { connected: !!(data.wallet.wcSession && data.wallet.wcSession.topic), accounts: (data.wallet.wcSession && data.wallet.wcSession.accounts) || [] }, paper: paper.valuation(data.wallet.paper, mint => (wallet ? wallet.priceOf(mint) : 0)), research: (data.wallet.research || []).slice().reverse().map(item => ({ id: item.id, mint: item.mint, symbol: item.symbol, status: item.status, createdAt: item.createdAt, hasReport: !!item.report, error: item.error })), strategies: data.wallet.strategies || [], limits: data.wallet.limits || {}, executions: (data.wallet.executions || []).slice(-20).reverse(), session: data.wallet.session, vault: (data.wallet.vault || []).map(({ encryptedSecret, ...rest }) => rest) };
+  return { config: { ...data.wallet }, state: state ? { loading: state.loading, error: state.error, updated: state.updated, watching: state.watching, total: state.total, change24h: state.change24h, holdings: state.holdings, watchlist: state.watchlist, alerts: state.alerts } : null, wc: { connected: !!(data.wallet.wcSession && data.wallet.wcSession.topic), accounts: (data.wallet.wcSession && data.wallet.wcSession.accounts) || [] }, paper: paper.valuation(data.wallet.paper, mint => (wallet ? wallet.priceOf(mint) : 0)), research: (data.wallet.research || []).slice().reverse().map(item => ({ id: item.id, mint: item.mint, symbol: item.symbol, status: item.status, createdAt: item.createdAt, hasReport: !!item.report, error: item.error })), strategies: data.wallet.strategies || [], limits: data.wallet.limits || {}, executions: (data.wallet.executions || []).slice(-20).reverse(), session: data.wallet.session, vault: (data.wallet.vault || []).map(({ encryptedSecret, ...rest }) => rest), views: data.wallet.views || [], theses: data.wallet.theses || [], view: activeView, signals: data.wallet.signals || [] };
 }
 function emit(event) { if(lifecycle.closing)return;if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('event', event); if(walletWindow&&!walletWindow.isDestroyed())walletWindow.webContents.send('event',event); voiceNotch?.event(event); commandBrick?.event(event); }
 function state(value, detail = '') {
@@ -433,6 +436,13 @@ async function generate(config, viaVoice = false) {
             tradeExecute: async (mint,side,amount,slippageBps)=>{ const preview=await swapPreview({mint,amountUi:Number(amount),slippageBps:Number(slippageBps)||50,side:side==='sell'?'sell':'buy'}); const allowed=await approve('live_swap',{mint,side,amount,summary:preview.summary,simulation:preview.simulation},signal); if(!allowed)return {denied:true,message:'User declined this swap.'}; return swapExecute({mint,amountUi:Number(amount),slippageBps:Number(slippageBps)||50,side:side==='sell'?'sell':'buy'}); },
             sessionPause: async exit=>{ session.pause(data.wallet.session,{paper:data.wallet.paper,strategies:data.wallet.strategies,priceOf:wallet.priceOf,exit:exit==='true'||exit===true}); await save(); if(!lifecycle.closing)emit({type:'wallet',wallet:walletView()}); return {state:data.wallet.session.state,note:data.wallet.session.note}; },
             sessionResume: async ()=>{ session.resume(data.wallet.session); await save(); if(!lifecycle.closing)emit({type:'wallet',wallet:walletView()}); return {state:data.wallet.session.state}; },
+            showView: (spec)=>{ const view=views.normalizeView({type:spec.type,title:spec.title,subtitle:spec.subtitle,mint:spec.mint,layout:spec.layout,source:{kind:spec.kind||'static',mint:spec.mint||'',metric:spec.metric||''}}); activeView=view; if(!lifecycle.closing)emit({type:'view',view}); return {shown:true,id:view.id,type:view.type,title:view.title}; },
+            thesisCreate: async (args)=>{ let legs; try{legs=JSON.parse(args.legs||'[]');}catch{throw Error('legs must be a JSON array.');} let exits={}; if(args.exits){try{exits=JSON.parse(args.exits);}catch{throw Error('exits must be a JSON object.');}} const saved=thesisModel.normalizeThesis({name:args.name,rationale:args.rationale,legs,exits},null); data.wallet.theses.push(saved); if(data.wallet.theses.length>30)data.wallet.theses=data.wallet.theses.slice(-30); await save(); if(!lifecycle.closing)emit({type:'wallet',wallet:walletView()}); return {id:saved.id,legs:saved.legs.length}; },
+            thesisList: ()=>data.wallet.theses.map(t=>({id:t.id,name:t.name,status:t.status,legs:t.legs.map(l=>({side:l.side,symbol:l.symbol,sizeUsd:l.sizeUsd})),exits:t.exits})),
+            thesisActivate: (id)=>activateThesis(id),
+            thesisShare: (id)=>{ const item=data.wallet.theses.find(t=>t.id===id); if(!item)throw Error('Thesis not found.'); return {text:thesisModel.toShareText(item)}; },
+            signalCreate: async (args)=>{ let condition; try{condition=JSON.parse(args.condition||'{}');}catch{throw Error('condition must be a JSON object.');} if(!solana.validateAddress(args.mint))throw Error('That does not look like a token mint.'); const saved=signals.normalizeSignal({name:args.name,mint:args.mint,condition,requireResearch:args.requireResearch==='true',action:args.action,usd:args.usd?Number(args.usd):undefined,cooldownSec:args.cooldownSec?Number(args.cooldownSec):undefined},null); data.wallet.signals.push(saved); if(data.wallet.signals.length>40)data.wallet.signals=data.wallet.signals.slice(-40); await save(); if(!lifecycle.closing)emit({type:'wallet',wallet:walletView()}); return {id:saved.id,condition:saved.condition,action:saved.action}; },
+            signalList: ()=>data.wallet.signals.map(s=>({id:s.id,name:s.name,symbol:s.symbol||wallet.shortMint(s.mint),condition:s.condition,requireResearch:s.requireResearch,action:s.action,enabled:s.enabled,lastTriggeredAt:s.lastTriggeredAt})),
             findFiles: query => findFiles(query, signal), revealFile: id => revealFile(id), askQuestion: (question,ids,choices) => askQuestion(question, signal,ids,choices) });
           }
         } catch (error) { if (signal.aborted) throw error; result = { error: error.message }; }
@@ -586,6 +596,23 @@ async function executeLiveIntent(intent) {
   } catch (error) { strategy.lastError = error.message; }
   finally { strategy.livePending = false; await save().catch(() => {}); if (!lifecycle.closing) emit({ type: 'wallet', wallet: walletView() }); }
 }
+async function activateThesis(id) {
+  const item = data.wallet.theses.find(t => t.id === id);
+  if (!item) throw new Error('Thesis not found.');
+  const exits = item.exits || {};
+  for (const leg of thesisModel.executableLegs(item)) {
+    const price = wallet.priceOf(leg.mint);
+    if (!(price > 0)) throw new Error(`No live price for ${leg.symbol || leg.mint} yet.`);
+    paper.buy(data.wallet.paper, { mint: leg.mint, symbol: leg.symbol, usd: leg.sizeUsd, price });
+    const filled = data.wallet.paper.orders[data.wallet.paper.orders.length - 1];
+    if (filled) filled.thesisId = item.id;
+    item.fills.push({ at: Date.now(), mint: leg.mint, symbol: leg.symbol, usd: leg.sizeUsd, price });
+    if (exits.takeProfitPct > 0) paper.addPending(data.wallet.paper, { mint: leg.mint, symbol: leg.symbol, kind: 'takeProfit', side: 'sell', trigger: price * (1 + exits.takeProfitPct / 100), percent: 100 });
+    if (exits.stopLossPct > 0) paper.addPending(data.wallet.paper, { mint: leg.mint, symbol: leg.symbol, kind: 'stop', side: 'sell', trigger: price * (1 - exits.stopLossPct / 100), percent: 100 });
+  }
+  item.status = 'active'; item.activatedAt = Date.now();
+  return walletAfter();
+}
 async function automationTick() {  if (lifecycle.closing || run) return;
   const now = Date.now();
   const due = data.automations.find(item => item.enabled && item.nextRun > 0 && item.nextRun <= now);
@@ -661,7 +688,7 @@ app.whenReady().then(async () => {
     onError:message=>emit({type:'error',message})
   });
   inputOverlay=createInputOverlay();computerControl=(process.platform==='darwin'?createComputerControlMac:createComputerControl)({onActivity:value=>inputOverlay.activity(value)});
-  wallet=createWalletManager({config:data.wallet,onUpdate:()=>{if(!lifecycle.closing)emit({type:'wallet',wallet:walletView()});},onSamples:()=>{save().catch(()=>{});},onIntent:intent=>{executeLiveIntent(intent).catch(()=>{});},onAlert:alert=>{if(!lifecycle.closing){emit({type:'wallet-alert',alert});try{if(mainWindow&&!mainWindow.isDestroyed())mainWindow.flashFrame(true);}catch{}}}});
+  wallet=createWalletManager({config:data.wallet,onUpdate:()=>{if(!lifecycle.closing)emit({type:'wallet',wallet:walletView()});},onSamples:()=>{save().catch(()=>{});},onIntent:intent=>{executeLiveIntent(intent).catch(()=>{});},onSignal:(rule,quote)=>{if(lifecycle.closing)return;emit({type:'wallet-signal',signal:{id:rule.id,name:rule.name,symbol:rule.symbol||wallet.shortMint(rule.mint),detail:rule.lastDetail,action:rule.action}});if(rule.action==='paper-buy'&&rule.usd>0){try{paper.buy(data.wallet.paper,{mint:rule.mint,symbol:rule.symbol,usd:rule.usd,price:wallet.priceOf(rule.mint)});save().catch(()=>{});emit({type:'wallet',wallet:walletView()});}catch{}}},freshResearch:(mint,rule)=>{const report=(data.wallet.research||[]).filter(x=>x.mint===mint&&x.status==='ready').slice(-1)[0];if(!report)return false;return Date.now()-report.createdAt<=(rule?.researchMaxAgeMin||720)*60000;},onAlert:alert=>{if(!lifecycle.closing){emit({type:'wallet-alert',alert});try{if(mainWindow&&!mainWindow.isDestroyed())mainWindow.flashFrame(true);}catch{}}}});
   solanaConnect=createSolanaConnect({getProjectId:()=>data.wallet.wcProjectId,getStorage:()=>data.wallet.wcStorage,setStorage:value=>{data.wallet.wcStorage=value;save().catch(()=>{});}});
   if(session.afterStartup(data.wallet.session,{paper:data.wallet.paper}))save().catch(()=>{});
   if(data.computerEnabled!==false)Promise.allSettled([computerControl.prepare?.(),inputOverlay.prepare?.()]);
@@ -993,6 +1020,17 @@ app.whenReady().then(async () => {
     return walletAfter();
   });
   handle('wallet-vault-remove', async id=>{data.wallet.vault=data.wallet.vault.filter(item=>item.id!==id);return walletAfter();});
+  handle('wallet-view-show', async spec=>{ activeView=views.normalizeView(spec||{}); if(!lifecycle.closing)emit({type:'view',view:activeView}); return {view:activeView}; });
+  handle('wallet-view-pin', async spec=>{ const view=views.normalizeView(spec||{}); if(!data.wallet.views.some(v=>v.id===view.id))data.wallet.views.push({...view,pinned:true}); if(data.wallet.views.length>40)data.wallet.views=data.wallet.views.slice(-40); return walletAfter(); });
+  handle('wallet-view-remove', async id=>{ data.wallet.views=data.wallet.views.filter(v=>v.id!==id); if(activeView&&activeView.id===id)activeView=null; return walletAfter(); });
+  handle('wallet-thesis-save', async value=>{ const existing=value&&value.id?data.wallet.theses.find(t=>t.id===value.id):null; const saved=thesisModel.normalizeThesis(value||{},existing); data.wallet.theses=existing?data.wallet.theses.map(t=>t.id===saved.id?saved:t):[...data.wallet.theses,saved]; return walletAfter(); });
+  handle('wallet-thesis-remove', async id=>{ data.wallet.theses=data.wallet.theses.filter(t=>t.id!==id); return walletAfter(); });
+  handle('wallet-thesis-share', async id=>{ const item=data.wallet.theses.find(t=>t.id===id); if(!item)throw Error('Thesis not found.'); return {text:thesisModel.toShareText(item)}; });
+  handle('wallet-thesis-activate', async id=>activateThesis(id));
+  handle('wallet-holders', async mint=>{ if(!solana.validateAddress(mint))throw Error('That does not look like a token mint.'); return walletProviders.holders(mint,{rpc:data.wallet.rpc||solana.DEFAULT_RPC}); });
+  handle('wallet-signal-save', async value=>{ const existing=value&&value.id?data.wallet.signals.find(s=>s.id===value.id):null; const saved=signals.normalizeSignal(value||{},existing); data.wallet.signals=existing?data.wallet.signals.map(s=>s.id===saved.id?saved:s):[...data.wallet.signals,saved]; return walletAfter(); });
+  handle('wallet-signal-remove', async id=>{ data.wallet.signals=data.wallet.signals.filter(s=>s.id!==id); return walletAfter(); });
+  handle('wallet-signal-toggle', async ({id,enabled})=>{ const s=data.wallet.signals.find(x=>x.id===id); if(!s)throw Error('Signal not found.'); s.enabled=enabled!==false; return walletAfter(); });
   handle('wallet-research-start', async value=>{
     if(!value||typeof value!=='object')throw Error('Invalid research request.');
     const mint=solana.normalizeAddress(value.mint);

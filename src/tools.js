@@ -36,7 +36,14 @@ const tools = [
   definition('trade_preview', 'Preview a real Solana swap for the connected wallet: quote and simulation only, nothing is signed. Requires Live mode and a connected wallet. Use before trade_execute.', { mint: string('Token mint address'), side: string('buy or sell'), amount: string('Amount in SOL for a buy, or token units for a sell'), slippageBps: string('Optional slippage in basis points, default 50') }, ['mint', 'side', 'amount']),
   definition('trade_execute', 'Execute a real Solana swap after the user approves it. Requires Live mode and a connected wallet. Signs through the wallet; never call without a preview and explicit user intent.', { mint: string('Token mint address'), side: string('buy or sell'), amount: string('Amount in SOL for a buy, or token units for a sell'), slippageBps: string('Optional slippage in basis points, default 50') }, ['mint', 'side', 'amount']),
   definition('session_pause', 'Pause trading: cancel controllable paper orders, pause active strategies, and optionally settle paper positions to the settlement mint. Live positions cannot be liquidated automatically and stay visible as exposure.', { exit: string('true to settle paper positions, otherwise false') }, []),
-  definition('session_resume', 'Resume trading after a pause, once any exposure has been reconciled.', {}, [])
+  definition('session_resume', 'Resume trading after a pause, once any exposure has been reconciled.', {}, []),
+  definition('show_view', 'Render a chart, table, metrics board, holder breakdown or note into the user\'s market canvas. type: line, area, bar, table, metrics, holders, thesis or note. kind: series (price history for a mint), pair (live metrics for a mint), holdings, holders (top accounts for a mint), research, static. layout: full, half or third. Use it whenever the user asks to see or visualize something.', { type: string('line, area, bar, table, metrics, holders, thesis or note'), title: string('Short heading'), subtitle: string('Optional caption'), mint: string('Token mint for series/pair/holders'), metric: string('Optional metric name for series'), kind: string('series, pair, holdings, holders, research or static'), layout: string('full, half or third') }, ['type', 'title']),
+  definition('thesis_create', 'Create a multi-leg PAPER thesis (trade your worldview): a name, rationale, legs and exits. legs is a JSON array like [{"mint":"...","symbol":"INTC","side":"long","sizeUsd":30}]; side is long, hedge or short, and only long legs with a size can run in paper. exits is a JSON object like {"stopLossPct":20,"takeProfitPct":50,"text":"exit if it loses the 50-day"}.', { name: string('Short thesis name'), rationale: string('Why this trade'), legs: string('JSON array of legs'), exits: string('JSON object of exit rules') }, ['name', 'legs']),
+  definition('thesis_list', 'List the user\'s theses with status, legs and sizes.', {}, []),
+  definition('thesis_activate', 'Run a thesis in the PAPER account: buy each long leg at the current price and set its exits. Short and hedge legs are notes and are not executed.', { id: string('Thesis id') }, ['id']),
+  definition('thesis_share', 'Return a shareable call card for a thesis as plain text.', { id: string('Thesis id') }, ['id']),
+  definition('signal_create', 'Create a signal rule: watch a token and fire when the chart lines up, optionally only when a fresh research report exists. condition is a JSON object like {"metric":"change24h","op":"below","value":-20} (metric: price, change24h or change; op: above, below, crossAbove, crossBelow). action is notify or paper-buy. The user gets a notification, and a small paper buy if configured.', { name: string('Short signal name'), mint: string('Token mint address'), condition: string('JSON condition object'), requireResearch: string('true to require a fresh research report'), action: string('notify or paper-buy'), usd: string('Paper buy size when action is paper-buy'), cooldownSec: string('Seconds between fires') }, ['name', 'mint', 'condition']),
+  definition('signal_list', 'List the user\'s signal rules with their condition, action and state.', {}, [])
 ];
 
 function inside(root, target) {
@@ -165,6 +172,13 @@ async function executeTool(name, args, context) {
     case 'trade_execute': return context.tradeExecute(args.mint, args.side, args.amount, args.slippageBps);
     case 'session_pause': return context.sessionPause(args.exit);
     case 'session_resume': return context.sessionResume();
+    case 'show_view': return context.showView(args);
+    case 'thesis_create': return context.thesisCreate(args);
+    case 'thesis_list': return context.thesisList();
+    case 'thesis_activate': return context.thesisActivate(args.id);
+    case 'thesis_share': return context.thesisShare(args.id);
+    case 'signal_create': return context.signalCreate(args);
+    case 'signal_list': return context.signalList();
   }
 }
 module.exports = { tools, inside, workspacePath, validateCall, executeTool, runPowerShell };
