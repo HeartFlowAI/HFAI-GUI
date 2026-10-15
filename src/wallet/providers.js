@@ -4,6 +4,9 @@ const { fetchMintSafety, rpcCall, DEFAULT_RPC } = require('./solana');
 // upgraded to Helius/Birdeye later without touching callers.
 const JUPITER_PRICE = 'https://lite-api.jup.ag/price/v3';
 const DEXSCREENER = 'https://api.dexscreener.com/latest/dex';
+const RUGCHECK = 'https://api.rugcheck.xyz/v1/tokens';
+const COINGECKO = 'https://api.coingecko.com/api/v3';
+const BINANCE = 'https://api.binance.com/api/v3';
 
 function number(value) { const n = Number(value); return Number.isFinite(n) ? n : 0; }
 function pairSummary(pair) {
@@ -40,11 +43,36 @@ async function searchTokens(query, { fetchImpl = fetch, signal } = {}) {
   return solana.slice(0, 25).map(pairSummary);
 }
 async function pairForToken(mint, { fetchImpl = fetch, signal } = {}) {
-  const response = await fetchImpl(`${DEXSCREENER}/tokens/v1/solana/${encodeURIComponent(mint)}`, { signal });
+  const response = await fetchImpl(`https://api.dexscreener.com/tokens/v1/solana/${encodeURIComponent(mint)}`, { signal });
   if (!response.ok) throw new Error(`DexScreener responded ${response.status}.`);
   const pairs = await response.json();
   const best = (Array.isArray(pairs) ? pairs : []).sort((a, b) => number(b?.liquidity?.usd) - number(a?.liquidity?.usd))[0];
   return best ? pairSummary(best) : null;
+}
+// Free price history (hourly points) for majors, used to seed charts so they are
+// not empty on first open. CoinGecko ids only cover well-known tokens.
+async function marketChart(url, days, { fetchImpl = fetch, signal } = {}) {
+  const response = await fetchImpl(`${url}?vs_currency=usd&days=${days}`, { signal });
+  if (!response.ok) throw new Error(`CoinGecko responded ${response.status}.`);
+  const body = await response.json();
+  return (body?.prices || []).map(([ms, usd]) => ({ t: Number(ms), p: Number(usd) })).filter(point => point.t > 0 && point.p > 0);
+}
+function coinHistory(coingeckoId, { fetchImpl = fetch, signal, days = 1 } = {}) {
+  return marketChart(`${COINGECKO}/coins/${encodeURIComponent(coingeckoId)}/market_chart`, days, { fetchImpl, signal });
+}
+// History for any Solana token by mint, via CoinGecko's contract endpoint. Works
+// for anything CoinGecko lists; unlisted tokens simply return an empty series.
+function tokenHistory(mint, days = 30, { fetchImpl = fetch, signal } = {}) {
+  return marketChart(`${COINGECKO}/coins/solana/contract/${encodeURIComponent(mint)}/market_chart`, days, { fetchImpl, signal });
+}
+const priceHistory = coinHistory;
+// Binance public klines: generous limits, no key. Covers tokens with a USDT
+// pair and is the primary chart source for those.
+async function binanceHistory(symbol, { fetchImpl = fetch, signal, interval = '1d', limit = 1000 } = {}) {
+  const response = await fetchImpl(`${BINANCE}/klines?symbol=${encodeURIComponent(symbol)}&interval=${interval}&limit=${limit}`, { signal });
+  if (!response.ok) throw new Error(`Binance responded ${response.status}.`);
+  const rows = await response.json();
+  return (Array.isArray(rows) ? rows : []).map(row => ({ t: Number(row[0]), p: Number(row[4]) })).filter(point => point.t > 0 && point.p > 0);
 }
 async function tokenSafety(mint, options = {}) {
   const safety = await fetchMintSafety(mint, options);
@@ -55,9 +83,30 @@ async function tokenSafety(mint, options = {}) {
   const level = flags.length === 0 ? 'ok' : flags.length === 1 ? 'caution' : 'risk';
   return { known: true, level, flags, mintRevoked: safety.mintRevoked, freezeRevoked: safety.freezeRevoked };
 }
-// Top accounts by balance. This is the largest-account list, not unique holders,
-// and pools are not excluded; label it honestly in the UI.
-async function holders(mint, { rpc = DEFAULT_RPC, fetchImpl = fetch, signal } = {}) {
+// Top holders via RugCheck (free, no key). Falls back to the RPC largest-account
+// list when RugCheck has no data. Both are largest-account lists, not unique
+// holders; pools and market makers are not excluded, so label it honestly.
+async function holders(mint, { fetchImpl = fetch, rpc = DEFAULT_RPC, signal } = {}) {
+  try {
+    const response = await fetchImpl(`${RUGCHECK}/${encodeURIComponent(mint)}/report`, { signal });
+    if (response.ok) {
+      const body = await response.json();
+      const top = Array.isArray(body?.topHolders) ? body.topHolders : [];
+      if (top.length) {
+        const accounts = top.slice(0, 20).map(entry => ({
+          address: entry.owner || entry.address || '',
+          amount: number(entry.uiAmount ?? entry.amount),
+          pct: number(entry.pct)
+        }));
+        return {
+          mint, accounts, source: 'rugcheck',
+          top1: accounts[0]?.pct || 0,
+          top10: accounts.slice(0, 10).reduce((sum, entry) => sum + entry.pct, 0),
+          holders: number(body.totalHolders), risks: Array.isArray(body.risks) ? body.risks.map(r => r.name || r.description || String(r)).slice(0, 6) : [], score: number(body.score)
+        };
+      }
+    }
+  } catch {}
   const [supply, largest] = await Promise.all([
     rpcCall(rpc, 'getTokenSupply', [mint], { fetchImpl, signal }).catch(() => null),
     rpcCall(rpc, 'getTokenLargestAccounts', [mint], { fetchImpl, signal }).catch(() => null)
@@ -67,6 +116,6 @@ async function holders(mint, { rpc = DEFAULT_RPC, fetchImpl = fetch, signal } = 
     const amount = Number(entry.uiAmount || 0) || 0;
     return { address: entry.address || '', amount, pct: total > 0 ? (amount / total) * 100 : 0 };
   });
-  return { mint, total, top1: accounts[0]?.pct || 0, top10: accounts.slice(0, 10).reduce((sum, entry) => sum + entry.pct, 0), accounts };
+  return { mint, accounts, source: 'rpc', total, top1: accounts[0]?.pct || 0, top10: accounts.slice(0, 10).reduce((sum, entry) => sum + entry.pct, 0), holders: 0, risks: [] };
 }
-module.exports = { JUPITER_PRICE, DEXSCREENER, jupiterPrices, searchTokens, pairForToken, tokenSafety, holders };
+module.exports = { JUPITER_PRICE, DEXSCREENER, RUGCHECK, BINANCE, jupiterPrices, searchTokens, pairForToken, priceHistory, coinHistory, tokenHistory, binanceHistory, tokenSafety, holders };

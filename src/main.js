@@ -206,7 +206,7 @@ function snapshot() {
 function walletView() {
   if (!data || !data.wallet) return null;
   const state = wallet ? wallet.snapshot() : null;
-  return { config: { ...data.wallet }, state: state ? { loading: state.loading, error: state.error, updated: state.updated, watching: state.watching, total: state.total, change24h: state.change24h, holdings: state.holdings, watchlist: state.watchlist, alerts: state.alerts } : null, wc: { connected: !!(data.wallet.wcSession && data.wallet.wcSession.topic), accounts: (data.wallet.wcSession && data.wallet.wcSession.accounts) || [] }, paper: paper.valuation(data.wallet.paper, mint => (wallet ? wallet.priceOf(mint) : 0)), research: (data.wallet.research || []).slice().reverse().map(item => ({ id: item.id, mint: item.mint, symbol: item.symbol, status: item.status, createdAt: item.createdAt, hasReport: !!item.report, error: item.error })), strategies: data.wallet.strategies || [], limits: data.wallet.limits || {}, executions: (data.wallet.executions || []).slice(-20).reverse(), session: data.wallet.session, vault: (data.wallet.vault || []).map(({ encryptedSecret, ...rest }) => rest), views: data.wallet.views || [], theses: data.wallet.theses || [], view: activeView, signals: data.wallet.signals || [] };
+  return { config: { ...data.wallet }, state: state ? { loading: state.loading, error: state.error, updated: state.updated, watching: state.watching, total: state.total, change24h: state.change24h, holdings: state.holdings, watchlist: state.watchlist, markets: state.markets || [], alerts: state.alerts } : null, wc: { connected: !!(data.wallet.wcSession && data.wallet.wcSession.topic), accounts: (data.wallet.wcSession && data.wallet.wcSession.accounts) || [] }, paper: paper.valuation(data.wallet.paper, mint => (wallet ? wallet.priceOf(mint) : 0)), research: (data.wallet.research || []).slice().reverse().map(item => ({ id: item.id, mint: item.mint, symbol: item.symbol, status: item.status, createdAt: item.createdAt, hasReport: !!item.report, error: item.error })), strategies: data.wallet.strategies || [], limits: data.wallet.limits || {}, executions: (data.wallet.executions || []).slice(-20).reverse(), session: data.wallet.session, vault: (data.wallet.vault || []).map(({ encryptedSecret, ...rest }) => rest), views: data.wallet.views || [], theses: data.wallet.theses || [], view: activeView, signals: data.wallet.signals || [] };
 }
 function emit(event) { if(lifecycle.closing)return;if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('event', event); if(walletWindow&&!walletWindow.isDestroyed())walletWindow.webContents.send('event',event); voiceNotch?.event(event); commandBrick?.event(event); }
 function state(value, detail = '') {
@@ -922,7 +922,8 @@ app.whenReady().then(async () => {
     await save();return snapshot();
   });
   handle('wallet-open-window', ()=>{createWalletWindow();return true;});
-  handle('wallet-series', mint=>{ if(!solana.validateAddress(mint))throw Error('That does not look like a token mint.'); return wallet.series(mint); });
+  handle('wallet-series', (mint, range)=>{ if(!solana.validateAddress(mint))throw Error('That does not look like a token mint.'); return wallet.history(mint, range); });
+  handle('wallet-portfolio-series', range=>wallet.portfolioHistory(range));
   handle('wallet-token-info', async mint=>{
     if(!solana.validateAddress(mint))throw Error('That does not look like a token mint.');
     const rpc=data.wallet.rpc||solana.DEFAULT_RPC;

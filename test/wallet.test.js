@@ -6,6 +6,7 @@ const { executeTool } = require('../src/tools');
 const { createSolanaConnect } = require('../src/wallet/connect');
 
 const SOL = solana.SOL_MINT;
+const DATE = Date.now() - 20 * 864e5;
 const ADDRESS = 'So11111111111111111111111111111111111111112';
 const WATCH = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
 const json = body => ({ ok: true, status: 200, json: async () => body });
@@ -21,6 +22,7 @@ function fakeFetch() {
       if (method === 'getAccountInfo') return json({ result: { value: { data: { parsed: { info: { mintAuthority: null, freezeAuthority: 'Frz', decimals: 6 } } } } } });
     }
     if (u.includes('jup')) return json({ [SOL]: { usdPrice: 150, priceChange24h: 1.5 }, [WATCH]: { usdPrice: 1, priceChange24h: 0.1 }, MintA: { usdPrice: 2, priceChange24h: 3 } });
+    if (u.includes('coingecko') && u.includes('market_chart')) return json({ prices: [[DATE, 1], [DATE + 10 * 864e5, 2], [DATE + 20 * 864e5, 3]] });
     if (u.includes('dexscreener') && u.includes('search')) return json({ pairs: [
       { chainId: 'solana', dexId: 'raydium', baseToken: { address: 'MintA', symbol: 'AAA', name: 'Aaa' }, priceUsd: '2', priceChange: { h24: '5' }, liquidity: { usd: '10000' }, volume: { h24: '5000' }, marketCap: '100000' },
       { chainId: 'ethereum', baseToken: { address: 'x', symbol: 'ETHX', name: 'Ethx' } }
@@ -71,6 +73,19 @@ test('wallet manager values holdings and computes shares', async () => {
   assert.equal(state.holdings[0].symbol, 'MintA');
   assert.equal(state.holdings.find(h => h.symbol === 'SOL').value, 300);
   assert.ok(Math.abs(state.holdings[0].share - 2000 / 2300) < 1e-9);
+  manager.dispose();
+});
+
+test('portfolio history aggregates priced holdings across a range', async () => {
+  const config = normalizeConfig({ addresses: [ADDRESS], rpc: '' });
+  const manager = createWalletManager({ config, fetchImpl: fakeFetch() });
+  await manager.refresh();
+  await manager.ready(SOL, 'max');
+  await manager.ready('MintA', 'max');
+  const series = manager.portfolioHistory('30D');
+  assert.equal(series.length, 3);
+  assert.equal(series[0].p, 1000 * 1 + 2 * 1);
+  assert.equal(series[2].p, 1000 * 3 + 2 * 3);
   manager.dispose();
 });
 

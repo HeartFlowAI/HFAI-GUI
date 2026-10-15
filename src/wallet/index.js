@@ -7,8 +7,19 @@ const sessionModule = require('./session');
 const viewsModule = require('../views');
 const thesisModule = require('../thesis');
 const signalsModule = require('../signals');
+const marketsModule = require('./markets');
 
+const MARKET_LIST = marketsModule.listMarkets();
 const MAX_POINTS = 240;
+const RANGE_DAYS = { '1D': 1, '7D': 7, '30D': 30, '3M': 90, '6M': 180, '1Y': 365, ALL: 'max' };
+const RANGE_MS = { '1D': 864e5, '7D': 7 * 864e5, '30D': 30 * 864e5, '3M': 90 * 864e5, '6M': 180 * 864e5, '1Y': 365 * 864e5, ALL: 0 };
+function downsample(points, max) {
+  if (points.length <= max) return points;
+  const step = points.length / max, out = [];
+  for (let i = 0; i < max; i++) out.push(points[Math.floor(i * step)]);
+  out[out.length - 1] = points[points.length - 1];
+  return out;
+}
 function sanitizeHistory(input) {  if (!input || typeof input !== 'object' || Array.isArray(input)) return {};
   const out = {};
   for (const [mint, points] of Object.entries(input)) {
@@ -92,11 +103,13 @@ function normalizeConfig(input) {
 }
 function shortMint(mint) { return typeof mint === 'string' && mint.length > 10 ? `${mint.slice(0, 4)}…${mint.slice(-4)}` : String(mint || ''); }
 function emptyState(now) {
-  return { loading: false, error: '', updated: now, watching: false, total: 0, change24h: 0, holdings: [], watchlist: [], alerts: [] };
+  return { loading: false, error: '', updated: now, watching: false, total: 0, change24h: 0, holdings: [], watchlist: [], markets: [], alerts: [] };
 }
 function createWalletManager({ config, fetchImpl = fetch, onUpdate = () => {}, onAlert = () => {}, onSamples = () => {}, onIntent = () => {}, onSignal = () => {}, freshResearch = () => true, intervalMs = 60000, now = () => Date.now() } = {}) {
   let timer = null, disposed = false;
   const fired = new Set();
+  const historyTried = new Set();
+  const marketHistory = new Map();
   const lastPrices = {};
   const lastChange = {};
   const samples = config.history || (config.history = {});
@@ -122,21 +135,25 @@ function createWalletManager({ config, fetchImpl = fetch, onUpdate = () => {}, o
   async function refresh() {
     if (disposed) return state;
     const watching = config.addresses.length > 0;
-    if (!watching && !config.watchlist.length) { Object.assign(state, emptyState(now()), { alerts: alertsView() }); onUpdate(); return state; }
+    if (!watching && !config.watchlist.length && !MARKET_LIST.length) { Object.assign(state, emptyState(now()), { alerts: alertsView() }); onUpdate(); return state; }
     state.loading = true; state.error = ''; onUpdate();
     try {
       const rpc = config.rpc || solana.DEFAULT_RPC;
       const portfolios = watching ? await Promise.all(config.addresses.map(address => solana.fetchPortfolio(address, { rpc, fetchImpl }))) : [];
-      const mints = new Set([solana.SOL_MINT, ...config.watchlist]);
-      for (const portfolio of portfolios) for (const token of portfolio.tokens) mints.add(token.mint);
+      const mints = new Set([solana.SOL_MINT, ...config.watchlist, ...MARKET_LIST.map(entry => entry.mint)]);
       for (const order of config.paper.pending) mints.add(order.mint);
-      const prices = await providers.jupiterPrices([...mints], { fetchImpl }).catch(() => ({}));
+      let budget = 200;
+      for (const portfolio of portfolios) for (const token of portfolio.tokens) { if (mints.has(token.mint) || budget <= 0) continue; budget -= 1; mints.add(token.mint); }
+      const ids = [...mints];
+      const prices = {};
+      for (let i = 0; i < ids.length; i += 50) { try { Object.assign(prices, await providers.jupiterPrices(ids.slice(i, i + 50), { fetchImpl })); } catch {} }
       for (const [mint, quote] of Object.entries(prices)) { lastPrices[mint] = Number(quote.price || 0); lastChange[mint] = Number(quote.change24h || 0); }
       const holdings = [];
       const push = (mint, symbol, amount, address) => {
         if (!(amount > 0)) return;
         const quote = prices[mint] || {};
         const price = Number(quote.price || 0);
+        if (!(price > 0)) return;
         holdings.push({ mint, symbol, amount, price, change24h: Number(quote.change24h || 0), value: amount * price, address });
       };
       for (const portfolio of portfolios) {
@@ -148,6 +165,7 @@ function createWalletManager({ config, fetchImpl = fetch, onUpdate = () => {}, o
       const change24h = total > 0 ? holdings.reduce((sum, holding) => sum + holding.value * (holding.change24h || 0), 0) / total : 0;
       for (const holding of holdings) holding.share = total > 0 ? holding.value / total : 0;
       const watchlist = config.watchlist.map(mint => { const quote = prices[mint] || {}; return { mint, symbol: shortMint(mint), price: Number(quote.price || 0), change24h: Number(quote.change24h || 0) }; });
+      const markets = MARKET_LIST.map(market => { const quote = prices[market.mint] || {}; return { mint: market.mint, symbol: market.symbol, name: market.name, coingecko: market.coingecko || '', price: Number(quote.price || 0), change24h: Number(quote.change24h || 0) }; });
       let recorded = false;
       for (const mint of mints) { const quote = prices[mint]; if (quote && record(mint, Number(quote.price))) recorded = true; }
       const running = (config.session && config.session.state) === 'RUNNING';
@@ -164,7 +182,7 @@ function createWalletManager({ config, fetchImpl = fetch, onUpdate = () => {}, o
       const firedSignals = running ? signalsModule.runSignals(config.signals, (mint, windowMinutes) => signals(mint, windowMinutes), { now: now(), freshResearch }) : [];
       for (const hit of firedSignals) { try { onSignal(hit.rule, hit.signals); } catch {} }
       if (firedSignals.length) recorded = true;
-      Object.assign(state, { loading: false, error: '', updated: now(), watching, total, change24h, holdings, watchlist, alerts: alertsView() });
+      Object.assign(state, { loading: false, error: '', updated: now(), watching, total, change24h, holdings, watchlist, markets, alerts: alertsView() });
       if (recorded) { try { onSamples(samples); } catch {} }
     } catch (error) {
       state.loading = false; state.error = error.message; state.updated = now();
@@ -172,9 +190,90 @@ function createWalletManager({ config, fetchImpl = fetch, onUpdate = () => {}, o
     onUpdate(); return state;
   }
   function series(mint) { return (samples[mint] || []).slice(-MAX_POINTS); }
+  let historyQueue = Promise.resolve();
+  function seedHistory(mint, market) {
+    historyQueue = historyQueue.then(async () => {
+      try {
+        const points = await providers.priceHistory(market.coingecko, { fetchImpl });
+        if (points.length) { samples[mint] = points.slice(-MAX_POINTS).map(point => ({ t: point.t, p: point.p })); try { onSamples(samples); } catch {} }
+      } catch {}
+      await new Promise(resolve => setTimeout(resolve, 400));
+    });
+    return historyQueue;
+  }
+  let cgChain = Promise.resolve(), cgLast = 0;
+  const pendingSeries = new Map();
+  function schedule(fn) {
+    cgChain = cgChain.then(async () => {
+      const gap = 2500 - (Date.now() - cgLast);
+      if (gap > 0) await new Promise(resolve => setTimeout(resolve, gap));
+      cgLast = Date.now();
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try { return await fn(); }
+        catch (error) { if (!/429/.test(error.message)) throw error; await new Promise(resolve => setTimeout(resolve, 5000 * (attempt + 1))); }
+      }
+      return [];
+    }).catch(() => []);
+    return cgChain;
+  }
+  function cachedSeries(mint, days) { const key = `${mint}|${days}`; return marketHistory.get(key) || null; }
+  function ensureSeries(mint, days) {
+    const key = `${mint}|${days}`;
+    if (marketHistory.has(key)) return Promise.resolve(marketHistory.get(key));
+    if (pendingSeries.has(key)) return pendingSeries.get(key);
+    const promise = (async () => {
+      let points = [];
+      const market = marketsModule.marketFor(mint);
+      if (market && market.binance) {
+        const interval = days === 7 ? '1h' : '1d';
+        const limit = days === 7 ? 168 : 1000;
+        try { points = await providers.binanceHistory(market.binance, { fetchImpl, interval, limit }); } catch {}
+      }
+      if (!Array.isArray(points) || points.length < 2) {
+        try {
+          points = await schedule(async () => {
+            let result = await providers.tokenHistory(mint, days, { fetchImpl });
+            if (result.length < 2 && market && market.coingecko) result = await providers.coinHistory(market.coingecko, { fetchImpl, days });
+            return result;
+          });
+        } catch {}
+      }
+      pendingSeries.delete(key);
+      if (Array.isArray(points) && points.length >= 2) { marketHistory.set(key, points); try { onUpdate(); } catch {} }
+      return Array.isArray(points) ? points : [];
+    })();
+    pendingSeries.set(key, promise);
+    return promise;
+  }
+  function sliceRange(points, range) { const ms = RANGE_MS[range] || 0; const cutoff = ms > 0 ? now() - ms : 0; return points.filter(point => point.t >= cutoff); }
+  function history(mint, range) {
+    const days = range === '1D' ? 7 : 'max';
+    const full = cachedSeries(mint, days);
+    if (full && full.length >= 2) { const points = downsample(sliceRange(full, range), MAX_POINTS); if (points.length >= 2) return points; }
+    ensureSeries(mint, days);
+    return series(mint);
+  }
+  function portfolioHistory(range) {
+    const days = range === '1D' ? 7 : 'max';
+    const holdings = (state.holdings || []).filter(holding => holding.amount > 0).sort((a, b) => (marketsModule.marketFor(b.mint) ? 1 : 0) - (marketsModule.marketFor(a.mint) ? 1 : 0) || b.value - a.value).slice(0, 8);
+    if (!holdings.length) return [];
+    const fetched = holdings.map(holding => { const full = cachedSeries(holding.mint, days); return { amount: holding.amount, points: full ? sliceRange(full, range) : [] }; });
+    for (const holding of holdings) ensureSeries(holding.mint, days);
+    const valid = fetched.filter(entry => entry.points.length >= 2);
+    if (!valid.length) return [];
+    const span = valid.map(entry => entry.points[entry.points.length - 1].t - entry.points[0].t).sort((a, b) => b - a)[0];
+    const bucketMs = span <= 2 * 864e5 ? 36e5 : span <= 40 * 864e5 ? 864e5 : 7 * 864e5;
+    const buckets = new Set();
+    for (const entry of valid) for (const point of entry.points) buckets.add(Math.floor(point.t / bucketMs) * bucketMs);
+    const cols = [...buckets].sort((a, b) => a - b);
+    const filled = valid.map(entry => { let idx = 0, last = null; return cols.map(bucket => { while (idx < entry.points.length && Math.floor(entry.points[idx].t / bucketMs) * bucketMs <= bucket) { last = entry.points[idx].p; idx++; } return last == null ? null : last * entry.amount; }); });
+    const out = [];
+    for (let i = 0; i < cols.length; i++) { let value = 0, ok = false; for (const col of filled) if (col[i] != null) { value += col[i]; ok = true; } if (ok) out.push({ t: cols[i], p: value }); }
+    return downsample(out, MAX_POINTS);
+  }
   function start() { if (timer || disposed) return; refresh().catch(() => {}); timer = setInterval(() => refresh().catch(() => {}), intervalMs); timer.unref?.(); }
   function stop() { if (timer) clearInterval(timer); timer = null; }
   function dispose() { disposed = true; stop(); }
-  return { refresh, start, stop, dispose, snapshot: () => state, series, shortMint, priceOf: mint => Number(lastPrices[mint] || 0), signals };
+  return { refresh, start, stop, dispose, snapshot: () => state, series, history, portfolioHistory, ready: ensureSeries, shortMint, priceOf: mint => Number(lastPrices[mint] || 0), signals };
 }
-module.exports = { createWalletManager, normalizeConfig, shortMint, sanitizeHistory, sanitizeResearch, MAX_POINTS };
+module.exports = { createWalletManager, normalizeConfig, shortMint, sanitizeHistory, sanitizeResearch, MAX_POINTS, RANGE_DAYS, downsample };

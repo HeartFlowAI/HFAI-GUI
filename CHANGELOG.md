@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.4 — Heartflow Aurora (2026-10-15)
+
+- Gigi's desk now has data the moment it opens. A small **live markets feed** (SOL, USDC, USDT, BONK, WIF, JUP, RAY, PYTH, JTO, mSOL, JitoSOL, bSOL) is priced continuously, with or without a wallet connected, so Discover, Trade and the Markets list are never empty.
+- **Portfolio performance**: the Portfolio tab now charts your portfolio's value over **1D, 7D, 30D, 3M, 6M, 1Y and All time**, aggregated from your holdings' price history (replaces the old single-token price chart).
+- **Trade rebuilt**: proper price charts with the same range selector, a full metric row (liquidity, 24h volume, market cap, 24h move, mint/freeze safety), token name, and Watch and Holders actions. Fixed the DexScreener lookup that left price and metrics blank.
+- **Real holders** via RugCheck (holder count, top-account concentration, risk flags) instead of the rate-limited public RPC.
+- Chart history is sourced from **Binance klines** (majors) with a throttled CoinGecko fallback, cached and sliced locally so ranges are instant after the first load.
+- Price polling now **batches Jupiter requests and drops unpriced spam tokens**, so wallets full of airdrops value correctly instead of showing zero.
+
 ## 0.5.3 — Heartflow Aurora (2026-10-15)
 
 - Added **signal rules**: watch a token and fire when the chart lines up, optionally only when a fresh research report exists (the local take on "ping me when it lines up"). A signal can just **notify** or place a small **paper buy**; rules have a cooldown, an enable toggle, and show in the desk's Strategies section. Gigi can create and list them with `signal_create` / `signal_list`.
