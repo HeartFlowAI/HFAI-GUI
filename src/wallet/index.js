@@ -8,6 +8,8 @@ const viewsModule = require('../views');
 const thesisModule = require('../thesis');
 const signalsModule = require('../signals');
 const marketsModule = require('./markets');
+const followModule = require('./follow');
+const peopleModule = require('./people');
 
 const MARKET_LIST = marketsModule.listMarkets();
 const MAX_POINTS = 240;
@@ -66,7 +68,9 @@ function sanitizeHistoryCache(input) {
 function sanitizeResearch(input) {
   if (!Array.isArray(input)) return [];
   return input.filter(item => item && item.id && ['queued', 'running', 'ready', 'failed'].includes(item.status)).slice(-30).map(item => ({
-    id: String(item.id), mint: typeof item.mint === 'string' ? item.mint.slice(0, 60) : '', symbol: typeof item.symbol === 'string' ? item.symbol.slice(0, 24) : '',
+    id: String(item.id), kind: item.kind === 'wallet' ? 'wallet' : 'token',
+    address: typeof item.address === 'string' ? item.address.slice(0, 60) : '',
+    mint: typeof item.mint === 'string' ? item.mint.slice(0, 60) : '', symbol: typeof item.symbol === 'string' ? item.symbol.slice(0, 24) : '',
     status: item.status, createdAt: Number(item.createdAt) || 0,
     report: typeof item.report === 'string' ? item.report.slice(0, 20000) : '',
     error: typeof item.error === 'string' ? item.error.slice(0, 300) : ''
@@ -79,7 +83,10 @@ function sanitizeExecutions(input) {
     side: item.side === 'sell' ? 'sell' : 'buy', mint: String(item.mint || '').slice(0, 60),
     inAmount: String(item.inAmount || '').slice(0, 40), outAmount: String(item.outAmount || '').slice(0, 40),
     status: ['submitted', 'confirmed', 'failed', 'pending'].includes(item.status) ? item.status : 'submitted',
-    error: String(item.error || '').slice(0, 200)
+    error: String(item.error || '').slice(0, 200),
+    venue: String(item.venue || '').slice(0, 30), pool: String(item.pool || '').slice(0, 30),
+    valueUsd: Number(item.valueUsd) || 0, slippagePct: Number(item.slippagePct) || 0,
+    priorityFeeSol: Number(item.priorityFeeSol) || 0, feePct: Number(item.feePct) || 0
   }));
 }
 function sanitizeVault(input) {
@@ -113,11 +120,18 @@ function normalizeConfig(input) {
     currency: typeof source.currency === 'string' && source.currency.trim() ? source.currency.trim().slice(0, 3).toUpperCase() : 'USD',
     hideBalances: source.hideBalances === true,
     execution: source.execution === 'live' ? 'live' : 'paper',
+    pumpSlippagePct: Math.min(50, Math.max(0.1, Number(source.pumpSlippagePct) || 10)),
+    pumpPriorityFeeSol: Math.min(0.05, Math.max(0, Number(source.pumpPriorityFeeSol) || 0.0005)),
+    pumpLiveEnabled: source.pumpLiveEnabled === true,
     watchlist,
+    followed: followModule.normalizeFollowed(source.followed),
+    people: peopleModule.normalizePeople(source.people),
     alerts,
     history: sanitizeHistory(source.history),
     historyCache: sanitizeHistoryCache(source.historyCache),
     wcProjectId: typeof source.wcProjectId === 'string' ? source.wcProjectId.trim().slice(0, 120) : '',
+    heliusEncryptedKey: typeof source.heliusEncryptedKey === 'string' ? source.heliusEncryptedKey.slice(0, 2000) : '',
+    jupiterEncryptedKey: typeof source.jupiterEncryptedKey === 'string' ? source.jupiterEncryptedKey.slice(0, 2000) : '',
     wcStorage: source.wcStorage && typeof source.wcStorage === 'object' && !Array.isArray(source.wcStorage) ? source.wcStorage : {},
     wcSession: source.wcSession && typeof source.wcSession === 'object' ? { topic: String(source.wcSession.topic || '').slice(0, 200), accounts: Array.isArray(source.wcSession.accounts) ? source.wcSession.accounts.slice(0, 5).map(String) : [] } : { topic: '', accounts: [] },
     paper: paperModule.normalizePaper(source.paper),
@@ -136,7 +150,7 @@ function shortMint(mint) { return typeof mint === 'string' && mint.length > 10 ?
 function emptyState(now) {
   return { loading: false, error: '', updated: now, watching: false, total: 0, change24h: 0, holdings: [], watchlist: [], markets: [], alerts: [] };
 }
-function createWalletManager({ config, fetchImpl = fetch, onUpdate = () => {}, onAlert = () => {}, onSamples = () => {}, onHistory = () => {}, onIntent = () => {}, onSignal = () => {}, freshResearch = () => true, intervalMs = 60000, now = () => Date.now() } = {}) {
+function createWalletManager({ config, fetchImpl = fetch, onUpdate = () => {}, onAlert = () => {}, onSamples = () => {}, onHistory = () => {}, onIntent = () => {}, onSignal = () => {}, onFollowed = () => {}, onFollowedActivity = () => {}, getJupiterKey = () => '', freshResearch = () => true, intervalMs = 60000, now = () => Date.now() } = {}) {
   let timer = null, disposed = false;
   const fired = new Set();
   const marketHistory = new Map();
@@ -165,6 +179,38 @@ function createWalletManager({ config, fetchImpl = fetch, onUpdate = () => {}, o
     if (windowMinutes > 0) { const series = samples[mint] || []; if (series.length) { const cutoff = now() - windowMinutes * 60000; const first = series.find(point => point.t >= cutoff) || series[0]; if (first && first.p > 0) change = (price - first.p) / first.p * 100; } }
     return { price, change24h, change };
   }
+  // Followed wallet activity uses signatures only, on a slower cadence than the
+  // price refresh. The first check records a baseline and never alerts.
+  async function checkFollowedActivity() {
+    if (disposed) return false;
+    const due = (config.followed || [])
+      .filter(item => item && item.watchActivity !== false && (!item.activityAt || now() - item.activityAt >= followModule.ACTIVITY_CHECK_MS))
+      .slice(0, 6);
+    if (!due.length) return false;
+    const rpc = config.rpc || solana.DEFAULT_RPC;
+    let changed = false;
+    for (let i = 0; i < due.length; i += 3) {
+      await Promise.all(due.slice(i, i + 3).map(async item => {
+        item.activityAt = now();
+        try {
+          const txs = await solana.fetchHistory(item.address, { rpc, fetchImpl, limit: 8 });
+          const latest = txs[0]?.signature || '';
+          if (item.lastSignature && latest && latest !== item.lastSignature) {
+            const fresh = txs.filter(tx => tx.signature && tx.signature !== item.lastSignature);
+            if (fresh.length) { try { onFollowedActivity(item, fresh); } catch {} }
+          }
+          if (latest) item.lastSignature = latest;
+          const latestAt = txs.reduce((max, tx) => Math.max(max, (Number(tx.blockTime) || 0) * 1000), 0);
+          if (latestAt) item.lastActivityAt = latestAt;
+          item.activityError = '';
+        } catch (error) { item.activityError = error.message; }
+        changed = true;
+      }));
+    }
+    if (changed) { try { onFollowed(); } catch {} }
+    return changed;
+  }
+
   async function refresh() {
     if (disposed) return state;
     const watching = config.addresses.length > 0;
@@ -179,7 +225,7 @@ function createWalletManager({ config, fetchImpl = fetch, onUpdate = () => {}, o
       for (const portfolio of portfolios) for (const token of portfolio.tokens) { if (mints.has(token.mint) || budget <= 0) continue; budget -= 1; mints.add(token.mint); }
       const ids = [...mints];
       const prices = {};
-      for (let i = 0; i < ids.length; i += 50) { try { Object.assign(prices, await providers.jupiterPrices(ids.slice(i, i + 50), { fetchImpl })); } catch {} }
+      for (let i = 0; i < ids.length; i += 50) { try { Object.assign(prices, await providers.jupiterPrices(ids.slice(i, i + 50), { fetchImpl, key: getJupiterKey() })); } catch {} }
       for (const [mint, quote] of Object.entries(prices)) { lastPrices[mint] = Number(quote.price || 0); lastChange[mint] = Number(quote.change24h || 0); }
       const holdings = [];
       const push = (mint, symbol, amount, address) => {
@@ -218,6 +264,7 @@ function createWalletManager({ config, fetchImpl = fetch, onUpdate = () => {}, o
       if (firedSignals.length) recorded = true;
       Object.assign(state, { loading: false, error: '', updated: now(), watching, total, change24h, holdings, watchlist, markets, alerts: alertsView() });
       if (recorded) { try { onSamples(samples); } catch {} }
+      await checkFollowedActivity();
     } catch (error) {
       state.loading = false; state.error = error.message; state.updated = now();
     }
@@ -285,13 +332,19 @@ function createWalletManager({ config, fetchImpl = fetch, onUpdate = () => {}, o
         const negAt = negative.get(cacheKey);
         if (negAt && now() - negAt < NEGATIVE_TTL) { pendingSeries.delete(cacheKey); return []; }
         try {
-          points = await schedule(async () => {
-            const market = marketsModule.marketFor(mint);
-            let result = await providers.tokenHistory(mint, rangeDays(key), { fetchImpl });
-            if (result.length < 2 && market && market.coingecko) result = await providers.coinHistory(market.coingecko, { fetchImpl, days: rangeDays(key) });
-            return result;
-          });
+          const gecko = await providers.geckoOhlcv(mint, key, { fetchImpl });
+          if (Array.isArray(gecko) && gecko.length >= 2) points = gecko;
         } catch {}
+        if (!Array.isArray(points) || points.length < 2) {
+          try {
+            points = await schedule(async () => {
+              const market = marketsModule.marketFor(mint);
+              let result = await providers.tokenHistory(mint, rangeDays(key), { fetchImpl });
+              if (result.length < 2 && market && market.coingecko) result = await providers.coinHistory(market.coingecko, { fetchImpl, days: rangeDays(key) });
+              return result;
+            });
+          } catch {}
+        }
         if (!Array.isArray(points) || points.length < 2) { negative.set(cacheKey, now()); pendingSeries.delete(cacheKey); return []; }
       }
       pendingSeries.delete(cacheKey);

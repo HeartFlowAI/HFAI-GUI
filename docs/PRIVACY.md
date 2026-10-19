@@ -19,6 +19,11 @@ Listening starts off on launch. Microphone audio is held in memory and is not sa
 | ElevenLabs or Fish Audio cloud recognition | Captured speech for wake detection, requests, answers and controls. Local silence filtering does not make this a local-only wake-word engine. |
 | Selected speech provider | Text selected for spoken replies and the configured voice identifier; Fish can also receive delivery cues. |
 | Windows recognition | Recognition remains local when the Windows fallback is selected. Request transcripts still go to the model when submitted. |
+| People and token intel | Tracked wallet addresses, labels, notes and launch history stay in the local wallet store. Scanning uses the Solana RPC, optional Helius and Jupiter keys, and public token/holder services. KOL roles are user-supplied, not inferred from social identity. |
+| Pump.fun discovery | Token and pool queries go to GeckoTerminal and DexScreener. A PumpPortal WebSocket receives new-launch and migration events. Token metadata and images are fetched from the creator's metadata URI and IPFS gateways, so those hosts receive the request. When Gigi auto scan runs, visible token metrics are sent to your selected model provider. |
+| PumpPortal live trades | The connected wallet public key, token mint, amount, slippage and priority fee are sent to PumpPortal to build a transaction. Signing happens in your wallet. |
+| xStocks | Asset, quote, market-status and reserve queries go to api.xstocks.fi. Token logos load from xstocks-metadata.backed.fi. |
+| Yahoo Finance | The underlying stock ticker and range are sent to Yahoo Finance when an underlying stock chart or quote metadata is requested. |
 
 Provider access, billing and retention rules are governed by the service you select. Cloud voice uses API credits. No independent provider-retention guarantee is made by this project.
 

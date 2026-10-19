@@ -1,5 +1,119 @@
 # Changelog
 
+## 0.6.7 — Heartflow Aurora (2026-10-19)
+
+This release turns Gigi's desk into a multi-venue research and trading workspace. It adds Pump.fun Pulse, xStocks, followed wallets and auto-mirroring, a People directory, token intelligence, dev rap sheets and a wallet cluster graph.
+
+### Pump.fun Pulse
+
+- Added a **Solana / Pump.fun / xStocks** platform switch in the desk header.
+- **Pulse** has New, Trending and Graduated stages, Cards and Table views, search, sort, minimum-volume filtering, sparklines, token logos, social chips and a dedicated Trade panel.
+- Pulse loads up to **50 tokens per stage**. It uses GeckoTerminal pools, DexScreener token profiles and the PumpPortal launch stream.
+- **PumpPortal WebSocket stream** subscribes to new-token and migration events. New launches are batched every 700ms and prepended to New instantly, without waiting for the next provider refresh.
+- Launch metadata is fetched from the creator's metadata URI, with IPFS gateway fallbacks (`pinata`, `filebase`, `4everland`, `mypinata`). Cards get images, X, Telegram, website, Pump.fun and DexScreener links. Missing images use deterministic colored monograms.
+- Fresh launches receive estimated price, market cap and curve liquidity from PumpPortal reserves until DexScreener indexes a pair.
+- **Live bonding-curve progress.** Pump.fun starts at 30 virtual SOL and graduates at 115 virtual SOL (85 SOL raised). Progress uses PumpPortal reserves, current pair market cap, or exact Pump.fun launchpad data from GeckoTerminal, in that order of freshness. The bar is shared by cards, the table and the Trade panel.
+- **Gigi auto scan** scans the top 8 tokens in the current stage, asks the selected model for strict JSON verdicts, renders BUY/WATCH/AVOID badges and can place paper buys. Budget, max buys, interval, paper toggle and position/daily caps are persisted and resume while Aurora is open.
+- **PumpPortal live trading** is wired for preview, simulation, WalletConnect signing and execution, with `pump`, `pump-amm` and `auto` pool detection, 0.5% venue fee disclosure, position/daily caps and an execution journal. Live buys on a still-bonding token require `pumpLiveEnabled`; sells remain available for exits.
+- Added the guarded `scripts/pump-live-smoke.js` live harness.
+- Gigi tools: `pump_discover`, `pump_scan`, `pump_watch`, `pump_trade_preview` and `pump_trade_execute`.
+
+### xStocks
+
+- Added tokenized US equity and ETF discovery with **Featured / All / ETFs**, search, market-status filters, pagination, open/halted/extended/overnight status, on-chain price, underlying quote, dividend multiplier, premium or discount, reserves and liquidity.
+- xStocks Trade supports **Stock** and **On-chain** charts. Stock history uses Yahoo Finance candles with 1D to ALL ranges, previous close, 52-week high/low and day range.
+- Live xStocks trades use the existing Jupiter/WalletConnect path and a one-time acknowledgment stored as `aurora-xstocks-ack-v1`.
+- Gigi tools: `xstocks_list`, `xstocks_asset`, `xstocks_scan` and `xstocks_history`.
+
+### Followed wallets, copying and mirroring
+
+- Follow up to 50 Solana wallets read-only, with labels, tags, notes and current scans.
+- Scan one wallet or all followed wallets with progress events, holdings, concentration, token accounts, recent signatures and optional Helius parsed activity.
+- Wallet **Brief** runs a deep research job. **Compare** lays out followed wallets side by side. **Copy to paper** allocates a chosen budget across top holdings.
+- **Auto-mirror** detects new followed-wallet activity, buys detected tokens in paper within per-event budget, daily cap and position cap, and sells when parsed Helius transfers identify exits.
+- New activity raises a desktop notification and inbox entry with a deep link to Solscan or the followed wallet.
+- Token-2022 accounts are merged with classic token accounts instead of being missed.
+- New modules: `src/wallet/follow.js`, `src/wallet/copy.js` and `src/wallet/mirror.js`.
+
+### People
+
+- New **People** workspace tab for devs, KOLs, influencers, traders, smart money and other wallets.
+- Add-and-scan, individual rescan, scan-all progress and role filters. Each person stores label, role, tags, note, holdings, last scan and observed dev launches.
+- People are separate from followed wallets, so research labels do not automatically enable copy trading or activity alerts.
+- PumpPortal create events now retain `traderPublicKey` as the token creator. Tracked devs update their observed launches when they launch or migrate again.
+- Dev launch history is explicitly labelled **observed**, not a complete on-chain history.
+- New module: `src/wallet/people.js` with `normalizePerson`, `normalizePeople`, `upsertPerson`, `mergeLaunch`, `launchFromPumpEvent`, `personStats` and `scanPerson`.
+
+### Token intel, dev rap sheets and wallet graph
+
+- Research now opens a structured **Token intel** view instead of only a mint box and markdown report.
+- Token intel includes price, market cap, liquidity, 24h change, bond progress, socials, safety, top holders and holder concentration.
+- **Dev Rap Sheet** shows the creator, whether they are tracked, current dev holding and supply percentage, observed launches, graduations and per-launch status. Track Dev adds the creator to People and seeds their observed launches.
+- **People & convergence** lists tracked people and followed wallets currently holding the token, with a KOL convergence count based on the latest scans.
+- Top holders are labelled when their address matches the dev, a tracked person or a followed wallet.
+- **Wallet cluster graph** links tracked/followed wallets that share a non-SOL, non-stable token. People shows clusters and strongest shared holdings; token intel shows the token center, dev, tracked holders, creator edges, holding edges and shared-holding edges.
+- Graph nodes are coloured by role, sized by value, clickable to Solscan, and explicitly described as co-holding relationships, not proof of shared funding or team ownership.
+- New backend function: `tokenIntel` plus `collectDevLaunches`, `enrichDevLaunches`, `holdingFor`, `followedKind`, `noteTrackedDevEvent` and the People scan job.
+- New desk functions: `drawPeople`, `renderTokenIntel`, `buildWalletGraph`, `renderWalletGraph`, `graphWalletMints` and `graphComponents`.
+- Gigi tools: `wallet_people`, `wallet_people_add` and `wallet_token_intel`.
+
+### Connections and keys
+
+- Settings now has a **Connections** hub for model, search, voice, RPC, Helius and Jupiter.
+- Separate Ollama web-search key handling with test action.
+- Custom Solana RPC entry and test.
+- Encrypted Helius and Jupiter keys stored through `safeStorage`; only `heliusHasKey` / `jupiterHasKey` are exposed to the renderer.
+- Connection badges show configured, missing, testing and error states.
+
+### Data layer and infrastructure
+
+- New GeckoTerminal feeds: new pools, trending pools, token metadata and multi-token batching, with serialized scheduling and fail-fast 429 handling.
+- DexScreener batch pair lookup, latest token profiles and token-profile fallback when GeckoTerminal is rate-limited.
+- Helius address transactions now feed followed-wallet parsed activity and wallet research.
+- Jupiter price batching accepts an optional API key.
+- PumpPortal metadata and trade-local clients with strict address and response validation.
+- CSP updated to allow remote token images (`img-src 'self' data: https:`).
+- New IPC surface:
+  - `wallet-pump-discover`, `wallet-pump-stream-status`, `wallet-pump-preview`, `wallet-pump-execute`, `wallet-pump-auto`, `wallet-pump-auto-status`
+  - `wallet-xstocks-discover`, `wallet-xstocks-asset`, `wallet-stock-history`
+  - `wallet-follow-add`, `wallet-follow-remove`, `wallet-follow-update`, `wallet-follow-scan`, `wallet-follow-scan-all`, `wallet-follow-scan-status`, `wallet-follow-brief`, `wallet-follow-copy`
+  - `wallet-people-save`, `wallet-people-remove`, `wallet-people-scan`, `wallet-people-scan-all`, `wallet-people-scan-status`
+  - `wallet-token-intel`
+  - `wallet-rpc-test`, `search-settings`, `search-test`, `helius-settings`, `helius-test`, `jupiter-settings`, `jupiter-test`
+- Preload adds matching renderer methods for every new IPC call.
+- New desk sections and panels persist their preferences in `aurora-desk-v2`.
+
+### Fixes
+
+- Fixed the DexScreener batch URL, platform tab icon/label replacement, Jupiter live-buy USD-to-SOL conversion, xStocks status cell stringification, xStocks ETF counts and no-DEX xStocks handling.
+- GeckoTerminal 429s now fall back to live PumpPortal launches plus DexScreener profiles instead of blanking Pulse.
+- Fresh Pump.fun rows can open Trade before GeckoTerminal indexes the launch.
+- Bond progress no longer shows a placeholder for streamed launches.
+- Token card prices no longer show `$0` for sub-cent launches.
+- People scans preserve identity, scan data and launch history when editing labels or roles.
+- The graph has no fake funding or team claims; it only uses observed wallet holdings and clearly labels that limitation.
+
+### Tests
+
+- **263 passing, 1 skipped** (`node --test test/*.test.js`, 264 tests total).
+- Added coverage for:
+  - Pump feeds and 50-row limits, curve progress, auto-buy selection, limits, PumpPortal trade-local bodies and tool routing.
+  - PumpPortal metadata normalization, IPFS gateway fallback and social links.
+  - xStocks catalog, quotes, multipliers, premium/discount and Yahoo stock history.
+  - Followed wallets, activity scanning, copy-to-paper, auto-mirror, deep links and scan progress.
+  - People normalization, roles/tags, scan preservation, launch merging, observed launch stats and people tools.
+  - Token intel UI, dev rap sheet, KOL convergence, top holders and the shared-holding wallet graph.
+  - 50-card live launch inserts, bonding percentages and auto-scan controls.
+
+### Known limits
+
+- GeckoTerminal's public endpoint rate-limits under heavy use; the New feed then runs from PumpPortal and DexScreener and marks the feed stale, while Trending and Graduated can be empty until the limit resets.
+- Dev launch history is local and observed. It is not a complete historical index of every token the wallet ever created.
+- KOL, influencer and trader labels are user-supplied. Aurora ships no guessed identity labels.
+- KOL convergence and shared-holding graphs depend on the latest wallet scans. Wallets that were never scanned do not appear.
+- Live auto trading remains intentionally disabled. Live bonding-curve buys require the live toggle, a funded WalletConnect wallet and explicit confirmation.
+- The first signed live trade still needs a funded WalletConnect wallet and a Reown project ID.
+
 ## 0.6.5 — Heartflow Aurora (2026-10-17)
 
 Adds a calmer visual identity and turns Gigi's desk into a real trading terminal: candlestick charts, a market screener, CEX-style paper orders, and a watch / alerts / notifications hub.

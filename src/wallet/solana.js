@@ -1,6 +1,7 @@
 const DEFAULT_RPC = 'https://api.mainnet-beta.solana.com';
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
 const TOKEN_PROGRAM = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
+const TOKEN_2022_PROGRAM = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
 
 function validateAddress(address) {
   return typeof address === 'string' && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address.trim());
@@ -24,17 +25,19 @@ async function rpcCall(url, method, params, { fetchImpl = fetch, signal } = {}) 
 }
 async function fetchPortfolio(address, { rpc = DEFAULT_RPC, fetchImpl = fetch, signal } = {}) {
   const account = normalizeAddress(address);
-  const [balance, accounts] = await Promise.all([
+  const [balance, accounts, accounts2022] = await Promise.all([
     rpcCall(rpc, 'getBalance', [account], { fetchImpl, signal }),
-    rpcCall(rpc, 'getTokenAccountsByOwner', [account, { programId: TOKEN_PROGRAM }, { encoding: 'jsonParsed' }], { fetchImpl, signal })
+    rpcCall(rpc, 'getTokenAccountsByOwner', [account, { programId: TOKEN_PROGRAM }, { encoding: 'jsonParsed' }], { fetchImpl, signal }),
+    rpcCall(rpc, 'getTokenAccountsByOwner', [account, { programId: TOKEN_2022_PROGRAM }, { encoding: 'jsonParsed' }], { fetchImpl, signal }).catch(() => ({ value: [] }))
   ]);
-  const tokens = [];
-  for (const entry of accounts?.value || []) {
+  const amounts = new Map();
+  for (const entry of [...(accounts?.value || []), ...(accounts2022?.value || [])]) {
     const info = entry?.account?.data?.parsed?.info;
     const amount = Number(info?.tokenAmount?.uiAmount || 0);
     if (!info?.mint || !(amount > 0)) continue;
-    tokens.push({ mint: info.mint, amount });
+    amounts.set(info.mint, (amounts.get(info.mint) || 0) + amount);
   }
+  const tokens = [...amounts].map(([mint, amount]) => ({ mint, amount }));
   return { address: account, lamports: Number(balance?.value || 0), sol: Number(balance?.value || 0) / 1e9, tokens };
 }
 async function fetchMintSafety(mint, { rpc = DEFAULT_RPC, fetchImpl = fetch, signal } = {}) {
@@ -50,4 +53,4 @@ async function fetchHistory(address, { rpc = DEFAULT_RPC, fetchImpl = fetch, sig
   const result = await rpcCall(rpc, 'getSignaturesForAddress', [account, { limit: Math.min(50, Math.max(1, Number(limit) || 10)) }], { fetchImpl, signal });
   return (result || []).map(item => ({ signature: item.signature, slot: item.slot, err: !!item.err, blockTime: item.blockTime || 0, memo: item.memo || '' }));
 }
-module.exports = { DEFAULT_RPC, SOL_MINT, TOKEN_PROGRAM, validateAddress, normalizeAddress, rpcCall, fetchPortfolio, fetchMintSafety, fetchHistory };
+module.exports = { DEFAULT_RPC, SOL_MINT, TOKEN_PROGRAM, TOKEN_2022_PROGRAM, validateAddress, normalizeAddress, rpcCall, fetchPortfolio, fetchMintSafety, fetchHistory };
