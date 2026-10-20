@@ -123,6 +123,10 @@ function normalizeConfig(input) {
     pumpSlippagePct: Math.min(50, Math.max(0.1, Number(source.pumpSlippagePct) || 10)),
     pumpPriorityFeeSol: Math.min(0.05, Math.max(0, Number(source.pumpPriorityFeeSol) || 0.0005)),
     pumpLiveEnabled: source.pumpLiveEnabled === true,
+    vaultWalletId: typeof source.vaultWalletId === 'string' ? source.vaultWalletId.slice(0, 60) : '',
+    liveAutoEnabled: source.liveAutoEnabled === true,
+    radarSeededAt: Number(source.radarSeededAt) || 0,
+    radarSeedVersion: Number(source.radarSeedVersion) || 0,
     watchlist,
     followed: followModule.normalizeFollowed(source.followed),
     people: peopleModule.normalizePeople(source.people),
@@ -150,7 +154,7 @@ function shortMint(mint) { return typeof mint === 'string' && mint.length > 10 ?
 function emptyState(now) {
   return { loading: false, error: '', updated: now, watching: false, total: 0, change24h: 0, holdings: [], watchlist: [], markets: [], alerts: [] };
 }
-function createWalletManager({ config, fetchImpl = fetch, onUpdate = () => {}, onAlert = () => {}, onSamples = () => {}, onHistory = () => {}, onIntent = () => {}, onSignal = () => {}, onFollowed = () => {}, onFollowedActivity = () => {}, getJupiterKey = () => '', freshResearch = () => true, intervalMs = 60000, now = () => Date.now() } = {}) {
+function createWalletManager({ config, fetchImpl = fetch, onUpdate = () => {}, onAlert = () => {}, onSamples = () => {}, onHistory = () => {}, onIntent = () => {}, onSignal = () => {}, onFollowed = () => {}, onFollowedActivity = () => {}, onPersonActivity = () => {}, getJupiterKey = () => '', freshResearch = () => true, intervalMs = 60000, now = () => Date.now() } = {}) {
   let timer = null, disposed = false;
   const fired = new Set();
   const marketHistory = new Map();
@@ -211,6 +215,35 @@ function createWalletManager({ config, fetchImpl = fetch, onUpdate = () => {}, o
     return changed;
   }
 
+  // People use the same signature watcher as followed wallets, but their
+  // activity can also trigger a read-only scan and a convergence check.
+  async function checkPeopleActivity() {
+    if (disposed) return false;
+    const due = (config.people || [])
+      .filter(item => item && item.watchActivity !== false && (!item.activityAt || now() - item.activityAt >= followModule.ACTIVITY_CHECK_MS))
+      .slice(0, 6);
+    if (!due.length) return false;
+    const rpc = config.rpc || solana.DEFAULT_RPC;
+    for (let i = 0; i < due.length; i += 3) {
+      await Promise.all(due.slice(i, i + 3).map(async item => {
+        item.activityAt = now();
+        try {
+          const txs = await solana.fetchHistory(item.address, { rpc, fetchImpl, limit: 8 });
+          const latest = txs[0]?.signature || '';
+          if (item.lastSignature && latest && latest !== item.lastSignature) {
+            const fresh = txs.filter(tx => tx.signature && tx.signature !== item.lastSignature);
+            if (fresh.length) { try { await onPersonActivity(item, fresh); } catch {} }
+          }
+          if (latest) item.lastSignature = latest;
+          const latestAt = txs.reduce((max, tx) => Math.max(max, (Number(tx.blockTime) || 0) * 1000), 0);
+          if (latestAt) item.lastActivityAt = latestAt;
+          item.activityError = '';
+        } catch (error) { item.activityError = error.message; }
+      }));
+    }
+    return true;
+  }
+
   async function refresh() {
     if (disposed) return state;
     const watching = config.addresses.length > 0;
@@ -265,6 +298,7 @@ function createWalletManager({ config, fetchImpl = fetch, onUpdate = () => {}, o
       Object.assign(state, { loading: false, error: '', updated: now(), watching, total, change24h, holdings, watchlist, markets, alerts: alertsView() });
       if (recorded) { try { onSamples(samples); } catch {} }
       await checkFollowedActivity();
+      await checkPeopleActivity();
     } catch (error) {
       state.loading = false; state.error = error.message; state.updated = now();
     }

@@ -1,5 +1,154 @@
 # Changelog
 
+## 0.6.9 — Heartflow Aurora (2026-10-20)
+
+This release rolls up everything built since 0.6.7. It makes the crypto desk easier to enter and leave, rebuilds Wallets and Alerts, adds Radar starter packs, redesigns Strategies and Signals, adds multilingual tutorials, cleans up Capabilities, makes Pump.fun resilient to rate limits, and adds local vault signing plus a live-auto safety policy.
+
+### Crypto navigation and shell
+
+- Gigi now opens to **normal chat** by default. The crypto desk only opens when the user presses **Crypto**.
+- Added a **Crypto** button in the chat header and renamed the sidebar entry to Crypto.
+- Crypto keeps the existing **Back to chat** action.
+- The app sidebar now collapses correctly inside crypto, including when collapsed.
+- Made the collapse control permanently visible on the right of the brand.
+- Replaced the raster brand mark with a clean line-heart icon.
+- Removed the waifu portrait/pet artwork and intro from the right companion sidebar on every chat.
+- Moved toast notifications to a **bottom-left stack**, max three, auto-dismissed, positioned beside the sidebar instead of over the composer.
+
+### Wallets
+
+- Rebuilt Wallets as a **master-detail** section.
+- Left rail: searchable wallet list with status dot, scan age, value and 24h change.
+- Right panel: Overview, Holdings, Activity, Automation and Notes tabs.
+- Overview now explains the scan in plain language:
+  - priced positions versus total token accounts
+  - largest position
+  - top-10 coverage and what 100% actually means
+  - spam/dust token accounts
+- Renamed “Tokens” to **Positions** and “Top 10” to **Top-10 coverage**.
+- Added tooltips for every overview metric.
+- One primary Scan action; Brief, Copy to paper, Ask Gigi, Solscan and Stop following moved into a `⋯` menu.
+- Add-wallet form only appears on demand.
+- Compare now replaces the detail panel instead of stacking another block.
+- Portfolio now owns the watchlist, with Set alert, Trade and Remove actions.
+
+### People and Radar
+
+- Added the **People** directory for devs, KOLs, influencers, traders and smart wallets.
+- Added roles, tags, notes, scans, holdings and observed launch history.
+- Added **Radar** background watching:
+  - new activity, buys, sells and token changes
+  - dev launches and graduations
+  - KOL convergence when two or more tracked KOLs hold the same token
+  - inbox, desktop notification and toast
+  - pause/resume per person
+- Added People search, source filters, Radar status filters, sorting and compact rows.
+- Added the 90-wallet **Starter Radar pack**:
+  - 30 Axiom traders
+  - 30 Pump.fun / Padre traders
+  - 30 Kolscan KOLs
+  - top 10 per source active; ranks 11–30 preloaded and paused
+- Added a versioned starter-pack merge that retires old starter entries while preserving user edits, scans and pause state.
+- Added a shared-holding wallet graph and token holder cluster graph.
+- People rows now report **priced positions** rather than raw token-account counts.
+
+### Alerts
+
+- Renamed Watch to **Alerts**.
+- Alerts is now one event feed for price alerts, signals, Radar events, wallet activity and fills.
+- Added filters: All, Price, Signals, Radar, Wallets, Fills, System.
+- Added fill events from paper orders and live executions.
+- Added alert cards with icons, unread state, timestamps, Open actions, Mark all read and Clear.
+- Price alerts remain in the same section.
+- Watchlist moved to Portfolio.
+- Notifications now use the bottom-left toast stack.
+
+### Research and token intel
+
+- Research now has a structured token intel panel.
+- Added the **Dev Rap Sheet**: creator wallet, tracked state, balance percentage, observed launches, graduations and launch status.
+- Added tracked holder and followed-wallet matching.
+- Added KOL convergence, top-holder labels, curve/safety metrics and token socials.
+- Added saved deep reports alongside token intel.
+- Added “Track dev” to People and a holder cluster graph.
+- Known limits are explicit: dev history is observed locally, and the graph is co-holding, not funding.
+
+### Strategies
+
+- Rebuilt Strategies as a six-step guided builder:
+  1. Asset
+  2. Idea
+  3. Rules
+  4. Distill
+  5. Test
+  6. Launch
+- Added eight setups: dip, breakout, trend, panic reclaim, strength pullback, first green hour, momentum ignition and custom.
+- Added editable trigger rows, AND/OR logic and a global window for change triggers.
+- Added three risk distillations: Conservative, Balanced, Aggressive.
+- Added a real backtest:
+  - 1D / 7D / 30D candles
+  - win rate, W/L, trades, net P&L, return, max drawdown, profit factor, average hold
+  - equity sparkline and recent test trades
+  - 0.5% fee per side
+- Added strategy cards with Edit, Activate/Pause, Run once, paper/live switch and Delete.
+- Risk-profile highlighting now reflects the actual size/cooldown/TP/SL values.
+- Added a persistent **live auto** switch, default off.
+- Live auto requires Live mode, a live signer and explicit confirmation.
+- Automatic live strategy intents fail closed when live auto is off; manual Run once remains available.
+
+### Signals
+
+- Rebuilt Signals with five presets: price alert, 24h dip, 1h spike, research-gated and custom.
+- Added a guided composer with token, condition, value, window, action, paper-buy size, cooldown and fresh-research gate.
+- Added plain-English previews.
+- Added signal cards with Edit, Pause/Enable and Delete.
+- Fixed a variable-shadowing bug that made signal saving fail.
+
+### Tutorials and Capabilities
+
+- Added a **Tutorial** button to every crypto section header, including Trade.
+- Tutorials cover workflow, every major control, and a section-specific “Good to know” note.
+- Added five languages: **English, Italian, French, German, Russian**.
+- Tutorial language persists and updates the Tutorial button label.
+- Rebuilt **Plugins & MCP** as **Capabilities**:
+  - summary counters
+  - clean built-in tool cards
+  - switches, tool counts, Gigi-only labels and expandable tool lists
+  - separate MCP cards with status, transport, tools, Connect/Disconnect, Edit and Remove
+  - larger, cleaner dialog
+- Renamed the sidebar entry to Capabilities.
+
+### Pump.fun resilience and live safety
+
+- Persisted Pump feeds to a 24-hour local cache.
+- Added a two-minute GeckoTerminal circuit breaker after 429s.
+- Cached New, Trending and Graduated remain visible while the stream keeps New live.
+- Added local vault signing for single-signer Jupiter and PumpPortal transactions.
+- Added `tx-sign.js` for legacy and versioned Solana transactions.
+- Added a Live signing wallet selector; bot secrets stay encrypted and never reach the renderer.
+- Multi-signer transactions are rejected and must use WalletConnect.
+- The desk header shows `Bot · label` when a bot signer is selected.
+- Live confirmations now show signer type, SOL balance, RPC health, route, minimum out, price impact and simulation before signing.
+- Live auto remains opt-in and off by default.
+
+### Tests and docs
+
+- Added tests for wallet master-detail, People filters, Radar starter pack, strategy builder/backtest, Signals, tutorials and translations, token intel, wallet graph, portfolio charts, Alerts fills, Pump cache behavior, vault signing and live-auto policy.
+- Suite: **281 pass, 1 skipped** (282 tests).
+- Updated HANDOFF, TRADING-WORKSPACE and PRIVACY documentation.
+
+### Known limits
+
+- A real funded mainnet trade still needs a funded WalletConnect wallet or vault wallet plus explicit confirmation.
+- Live auto is intentionally off until explicitly enabled.
+- Multi-signer vault signing is not implemented.
+- Vault export/restore is not implemented.
+- Pump Trending/Graduated can still be stale during provider outages; cached data is used.
+- Dev history is observed, not complete on-chain history.
+- KOL labels are user- or source-supplied, not verified identities.
+- Yahoo stock history is unofficial and can be rate-limited.
+- A real MCP server still needs a live connection test.
+
 ## 0.6.7 — Heartflow Aurora (2026-10-19)
 
 This release turns Gigi's desk into a multi-venue research and trading workspace. It adds Pump.fun Pulse, xStocks, followed wallets and auto-mirroring, a People directory, token intelligence, dev rap sheets and a wallet cluster graph.

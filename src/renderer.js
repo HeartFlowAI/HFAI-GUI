@@ -8,7 +8,18 @@ let comboBuilding=false, customSelection=[];
 const expandedProjects=new Set();
 try{const saved=JSON.parse(localStorage.getItem('aurora-project-groups')||'[]');if(Array.isArray(saved))saved.filter(id=>typeof id==='string').forEach(id=>expandedProjects.add(id));}catch{}
 const captions = { idle: 'Here to help. Happy to be here.', thinking: 'Connecting the little dots…', browsing: 'A little curiosity goes a long way.', coding: 'Making something good, together.', waiting: 'I’ll wait for your say-so.', celebrating: 'We made it happen! ✦', error: 'A little hiccup. Let’s try again.' };
-function toast(message) { $('toast').textContent = message; $('toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').hidden = true, 7000); }
+function toast(message) {
+  const stack = $('toast-stack');
+  if (!stack) { $('toast').textContent = message; $('toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').hidden = true, 7000); return; }
+  const sidebar = document.querySelector('.sidebar');
+  const left = sidebar ? Math.max(18, sidebar.getBoundingClientRect().width + 18) : 18;
+  stack.style.left = `${left}px`;
+  stack.style.maxWidth = `min(420px, calc(100vw - ${left + 18}px))`;
+  const item = document.createElement('div'); item.className = 'toast-item'; item.textContent = message;
+  stack.append(item);
+  while (stack.children.length > 3) stack.firstElementChild.remove();
+  setTimeout(() => { item.classList.add('out'); setTimeout(() => item.remove(), 200); }, 5200);
+}
 async function call(promise) { const result = await promise; if (!result.ok) throw new Error(result.error); return result.value; }
 function action(fn) { return async (...args) => { try { await fn(...args); } catch (error) { toast(error.message); } }; }
 function scroll() { $('messages').scrollTop = $('messages').scrollHeight; }
@@ -312,6 +323,11 @@ function renderAgent(){
   if(!agent.companion)portrait.src=agent.avatar;
   pet.hidden=!agent.companion||detached;
   if(view.mode!=='code'){const paragraph=$('welcome')?.querySelector('p');if(paragraph)paragraph.textContent=`I’m ${agent.name}. ${agent.essence||''} Tell me what we’re working on.`;}
+  const promptBox=$('prompt');if(promptBox)promptBox.placeholder=agent.id==='gigi'?"What's the play?":'What shall we work on?';
+  const cryptoButton=$('crypto-open');
+  if(cryptoButton)cryptoButton.hidden=agent.id!=='gigi'||window.AuroraWorkspace?.isOpen?.()===true;
+  const cryptoNav=$('trading-open');
+  if(cryptoNav){cryptoNav.hidden=agent.id!=='gigi';const label=cryptoNav.querySelector('span:last-child');if(label)label.textContent='Crypto';}
   buildAgentPicker();
 }
 function buildAgentPicker(){
@@ -322,7 +338,7 @@ function buildAgentPicker(){
     const img=document.createElement('img');img.className='agent-card-avatar';img.src=agent.avatar;img.alt='';img.loading='lazy';
     const text=document.createElement('span');text.className='agent-card-text';const name=document.createElement('strong');name.textContent=agent.name;const tag=document.createElement('small');tag.textContent=agent.tagline;text.append(name,tag);button.title=`${agent.role} · ${agent.focus}`;
     button.append(img,text);
-    button.onclick=action(async()=>{closeAgentPicker();render(await call(window.aurora.agent(agent.id)));renderHistory();toast(`${agent.name} is here.`);if(agent.id==='gigi')window.AuroraWorkspace?.enter?.();else window.AuroraWorkspace?.close?.();});
+    button.onclick=action(async()=>{closeAgentPicker();render(await call(window.aurora.agent(agent.id)));renderHistory();toast(`${agent.name} is here.`);window.AuroraWorkspace?.close?.();});
     picker.append(button);
   }
 }

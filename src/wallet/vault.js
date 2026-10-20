@@ -1,9 +1,8 @@
 const crypto = require('node:crypto');
 
 // Local bot wallet keys. Generated and stored encrypted (safeStorage); secrets
-// never reach models, build code, logs or the renderer. Signing a Jupiter
-// transaction from this vault still needs a reviewed crypto step, so live
-// execution currently signs through the connected external wallet.
+// never reach models, build code, logs or the renderer. Single-signer Solana
+// transactions are signed in the main process by tx-sign.js.
 const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 
 function base58encode(buffer) {

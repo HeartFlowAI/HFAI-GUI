@@ -37,7 +37,7 @@ Bottom line: the read/analysis side (portfolio, charts, holders, markets) is now
 
 ### P1. WalletConnect and the vault are unverified end to end
 - `src/wallet/connect.js:18` requires a Reown project ID. The connect button in Settings copies the URI and waits, but the full handshake, session persistence (`wcSession`, `wcStorage`) and `signTransaction`/`signMessage` round trip have not been validated live.
-- `src/wallet/vault.js` only does keygen/import/publicFromSecret; it does **not sign**. The Settings copy already says signing is pending (C17). Live swaps therefore always use the connected external wallet.
+- `src/wallet/vault.js` handles keygen/import/publicFromSecret, and `src/wallet/tx-sign.js` signs single-signer Jupiter/PumpPortal transactions. Select a bot as the live signing wallet in Settings, Wallet. Multi-signer transactions still use WalletConnect.
 
 ### P2. Candle charts absent
 - Charts are close-line/area only (`drawChart`). Binance klines already return OHLC; rendering candles is a small extension and a big perceived-quality jump.
@@ -186,7 +186,7 @@ Goal: make every desk function actually work, in this order.
 
 Constraints to respect: CoinGecko free tier rate-limits hard (throttle, retry, cache, slice locally);
 Binance klines is the primary history source; RugCheck is the holders source; public Solana RPCs are
-unreliable; WalletConnect needs a Reown project ID; in-vault signing (C17) is not implemented yet.
+unreliable; WalletConnect needs a Reown project ID; local vault signing supports single-signer transactions only.
 
 When done, report what renders and what still does not, with file:line references, and do not commit
 unless asked.
@@ -394,7 +394,7 @@ Fixed:
 - **Alerts fired only once per run.** They now re-arm when price crosses back over the threshold.
 
 Found, still open (by design or needing an environment):
-- In-vault signing (C17) is not implemented; live execution signs only via the connected external wallet.
+- Local vault signing supports single-signer Jupiter and PumpPortal transactions. Multi-signer transactions still require WalletConnect.
 - WalletConnect uses the deprecated `requiredNamespaces`; Reown prefers `optionalNamespaces`, so pairing
   with a real project id may fail. Needs a Reown project id to verify.
 - Live strategies in `auto` mode execute without a per-trade approval (only `each` asks).
@@ -688,7 +688,7 @@ Landed:
   cards and in the table with a reason line.
 - **Auto paper.** Optional paper-only autotrade with budget, max buys per cycle,
   a 30 minute per-token cooldown, paper cash, the position cap and the daily cap.
-  Live auto is intentionally disabled.
+  Live strategy auto is off by default and requires an explicit switch plus a live signer.
 - **Auto bar.** Shows running state, last scan, last auto buys, errors and model
   cost warning. Settings persist in local storage. Auto scan resumes when the
   Pump.fun surface opens again and stops on shutdown.
@@ -701,7 +701,7 @@ produced 8 verdicts and reasons, no console errors.
 
 Limits: auto scan settings persist, and scanning resumes when Pump.fun opens. It
 uses one model call per interval and can cost credits. Sparklines fall back to an approximate trend until
-Gecko candles load. Live auto trading is not enabled.
+Gecko candles load. Live strategy auto remains off until explicitly enabled.
 
 
 ### 2026-10-18 (Pulse card polish, images and socials)
@@ -833,3 +833,32 @@ availability can vary.
   Wallets need to be scanned for the graph to include them.
 - Tests: 263 pass, 1 skipped. New coverage for a shared-holding edge between two
   tracked wallets and for the token holder graph.
+
+
+### 2026-10-20 (vault signing and Pump cache)
+
+- Added `src/wallet/tx-sign.js` for Solana wire-format transaction signing with
+  ed25519. It supports legacy and versioned single-signer transactions and
+  rejects multi-signer transactions instead of sending incomplete ones.
+- Added a live signing wallet selector in Settings, Wallet. A selected bot wallet
+  signs Jupiter and PumpPortal live transactions locally through the OS-encrypted
+  vault; WalletConnect remains the fallback.
+- The crypto desk connection label now shows `Bot · <label>` when a bot signer is
+  selected.
+- Live confirmations now show signer type, SOL balance and RPC health alongside
+  route, minimum out, price impact and simulation.
+- Pump.fun feeds are persisted to a local pump cache for 24 hours. A Gecko 429
+  now triggers a two-minute circuit breaker while cached/stream data stays
+  visible, so Trending and Graduated do not go blank on every refresh.
+- Tests: transaction signing, versioned transactions, wrong-wallet rejection,
+  compact-u16 parsing and the existing full suite.
+
+
+### 2026-10-20 (live auto policy)
+
+- Added a persistent `liveAutoEnabled` flag, default off.
+- Added a `Live auto off / on` control in Strategies. Enabling requires Live
+  execution, a selected WalletConnect or bot signer, and an explicit confirmation.
+- Automatic live strategy intents now fail closed unless `liveAutoEnabled` is
+  true. Manual `Run once` remains available as an explicit action.
+- Pump auto scan remains paper-only and separate from strategy live auto.

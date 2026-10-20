@@ -1,9 +1,8 @@
 const { rpcCall } = require('./solana');
 
-// Jupiter swap + simulation + reconciliation. Live execution signs through the
-// connected wallet (WalletConnect); Aurora never holds keys. Nothing here is
-// called unless the user is in live mode with a connected wallet and has
-// approved the specific transaction.
+// Jupiter swap + simulation + reconciliation. Live execution signs through
+// WalletConnect or a selected local bot wallet. Nothing here is called unless
+// the user is in live mode and has approved the specific transaction.
 const JUPITER_SWAP = 'https://lite-api.jup.ag/swap/v1';
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
 const SOL_DECIMALS = 9;

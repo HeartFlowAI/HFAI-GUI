@@ -19,8 +19,9 @@
 
   const persisted = (() => { try { return JSON.parse(localStorage.getItem('aurora-desk-v2') || '{}') || {}; } catch { return {}; } })();
   const savePrefs = () => { try { localStorage.setItem('aurora-desk-v2', JSON.stringify({ section, chatW, chatOpen, tradeCandles, tradeSide, tradeType, tradeTab, discoverTab, discoverDex, platform, pumpStage, pumpSort, pumpSlippage, pumpPriority, pumpView: pumpViewMode, pumpAutoEnabled: pumpAutoState.enabled, pumpAutoPaper: pumpAutoState.autoPaper, pumpAutoBudget: pumpAutoState.budgetUsd, pumpAutoMaxBuys: pumpAutoState.maxBuys, pumpAutoInterval: pumpAutoState.intervalSec, xStatus, xchart: xChartSource })); } catch {} };
-  const SECTIONS = [['wallets', 'Wallets', 'wallet'], ['people', 'People', 'holders'], ['portfolio', 'Portfolio', 'portfolio'], ['trade', 'Trade', 'trade'], ['discover', 'Discover', 'discover'], ['watch', 'Watch', 'watch'], ['research', 'Research', 'research'], ['strategies', 'Strategies', 'strategies'], ['journal', 'Journal', 'journal']];
-  let section = SECTIONS.some(x => x[0] === persisted.section) ? persisted.section : 'wallets';
+  const SECTIONS = [['wallets', 'Wallets', 'wallet'], ['people', 'People', 'holders'], ['portfolio', 'Portfolio', 'portfolio'], ['trade', 'Trade', 'trade'], ['discover', 'Discover', 'discover'], ['alerts', 'Alerts', 'alert'], ['research', 'Research', 'research'], ['strategies', 'Strategies', 'strategies'], ['journal', 'Journal', 'journal']];
+  const persistedSection = persisted.section === 'watch' ? 'alerts' : persisted.section;
+  let section = SECTIONS.some(x => x[0] === persistedSection) ? persistedSection : 'wallets';
   let chatW = persisted.chatW || 400, chatOpen = persisted.chatOpen === true;
   let open = false, chartMint = '', pfChartMint = '', reportOpen = '', reportText = '';
   let pfRange = '30D', tradeRange = '7D', tradeCandles = persisted.tradeCandles !== false, journalKind = 'all', journalFilter = '';
@@ -31,7 +32,7 @@
   const holdersCache = new Map();
   const discover = { items: {}, loading: {}, error: {} };
   let discoverTab = ['new', 'takeovers', 'narratives'].includes(persisted.discoverTab) ? persisted.discoverTab : 'trending';
-  let discoverQuery = '', discoverMinLiq = 0, discoverSort = { key: 'volume24h', dir: -1 }, watchMint = '';
+  let discoverQuery = '', discoverMinLiq = 0, discoverSort = { key: 'volume24h', dir: -1 }, watchMint = '', alertFilter = 'all';
   let discoverDex = ['all', 'pumpfun', 'pumpswap'].includes(persisted.discoverDex) ? persisted.discoverDex : 'all';
   let platform = ['pumpfun', 'xstocks'].includes(persisted.platform) ? persisted.platform : 'solana';
   let pumpStage = ['new', 'trending', 'graduated'].includes(persisted.pumpStage) ? persisted.pumpStage : 'new';
@@ -55,12 +56,24 @@
   const xstockNames = new Map();
   let pumpRefreshTimer = null;
   let peopleFilter = 'all', peopleAddKind = 'kol', peopleScanState = null;
+  let peopleQuery = '', peopleSource = 'all', peopleStatus = 'all', peopleSort = 'order', peopleAddOpen = false;
   let intelMint = '', intelData = null, intelLoading = false, intelError = '';
   const intelTried = new Set();
   let followSelected = '', compareWallets = false, copyOpen = '';
+  let walletTab = 'overview', walletAddOpen = false, walletQuery = '';
+  let strategyBuilderOpen = false, strategyStep = 0, strategyTemplate = 'dip', strategyDraft = null, strategyEditingId = '';
+  let strategyBacktest = null, strategyBacktestLoading = false, strategyBacktestError = '', strategyBacktestRange = '7D', strategyProfile = 'custom';
+  let signalComposerOpen = false, signalPreset = 'custom', signalDraft = null, signalEditingId = '';
+  const TUTORIALS = window.AuroraTutorials || { languages: [], ui: {}, names: {}, sections: {} };
+  const tutorialIds = new Set((TUTORIALS.languages || []).map(item => item.id));
+  let tutorialLang = (() => { try { const saved = localStorage.getItem('aurora-tutorial-lang'); if (saved && tutorialIds.has(saved)) return saved; } catch {} const nav = String(navigator.language || 'en').slice(0, 2); return tutorialIds.has(nav) ? nav : 'en'; })();
+  let tutorialKey = 'wallets';
 
   const ws = mk('div'); ws.id = 'trading-workspace'; ws.hidden = true;
   ws.innerHTML = `<header class="ws-top"><div class="ws-brand"><img src="assets/agents/gigi.webp" alt=""><div><strong><span class="dot"></span>Gigi</strong><small id="ws-conn">Solana desk</small></div></div><label class="ws-search"><span class="ws-search-ico"></span><input id="ws-search" type="search" placeholder="Search tokens by name or mint" maxlength="60" aria-label="Search tokens"><kbd>⌘K</kbd></label><div class="ws-search-results" id="ws-search-results" hidden></div><span class="ws-top-spacer"></span><div class="ws-seg ws-platform" id="ws-platform" role="group" aria-label="Platform"><button data-platform="solana">Solana</button><button data-platform="pumpfun">Pump.fun</button><button data-platform="xstocks">xStocks</button></div><div class="ws-seg" id="ws-seg"><button data-exec="paper">Paper</button><button data-exec="live">Live</button></div><button id="ws-chat-visible" class="hf-btn ghost" type="button">Chat</button><button id="ws-settings" class="hf-btn ghost" type="button">Settings</button><button id="ws-close" class="hf-btn" type="button">Back to chat</button></header><nav class="ws-tabs hf-tabs" id="ws-tabs" role="tablist" aria-label="Trading sections"></nav><div class="ws-split" id="ws-split"><div class="ws-content" id="ws-content"></div><aside class="ws-chat" id="ws-chat" role="complementary"><div class="ws-resizer" id="ws-resizer" role="separator" aria-label="Resize chat"></div><div class="ws-chat-head"><img src="assets/agents/gigi.webp" alt=""><div><strong>Gigi</strong> <small>markets sister</small></div><span class="ws-chat-spacer"></span><button class="hf-btn icon sm" id="ws-chat-collapse" type="button" title="Collapse chat"></button></div><div class="ws-chat-slot" id="ws-chat-slot"></div></aside></div><div class="ws-palette" id="ws-palette" hidden><div class="ws-palette-box"><input id="ws-palette-input" class="hf-input" placeholder="Search tokens or type a command…" aria-label="Command palette" autocomplete="off"><div class="ws-list" id="ws-palette-list"></div></div></div><div class="ws-viewer" id="ws-viewer" hidden><div class="ws-viewer-box" role="dialog" aria-modal="true" aria-label="Gigi view"><header class="ws-viewer-head"><div><small>GIGI'S READ</small><strong id="ws-viewer-title">View</strong></div><button class="hf-btn icon sm" id="ws-viewer-close" type="button" aria-label="Close view">×</button></header><div class="ws-viewer-body" id="ws-viewer-body"></div></div></div>`;
+  const tutorial = mk('div', 'ws-tutorial'); tutorial.id = 'ws-tutorial'; tutorial.hidden = true;
+  tutorial.innerHTML = `<div class="ws-tutorial-box" role="dialog" aria-modal="true" aria-labelledby="ws-tutorial-title"><header class="ws-tutorial-head"><div><small>TUTORIAL</small><strong id="ws-tutorial-title"></strong></div><button id="ws-tutorial-close" class="hf-btn icon sm" type="button" aria-label="Close tutorial">×</button></header><div class="ws-tutorial-langs" id="ws-tutorial-langs"></div><div class="ws-tutorial-body" id="ws-tutorial-body"></div></div>`;
+  ws.append(tutorial);
   (document.querySelector('main') || document.body).append(ws);
   const content = ws.querySelector('#ws-content'); const tabs = ws.querySelector('#ws-tabs'); const results = ws.querySelector('#ws-search-results'); const split = ws.querySelector('#ws-split'); const chat = ws.querySelector('#ws-chat');
   const palette = ws.querySelector('#ws-palette'); const paletteInput = ws.querySelector('#ws-palette-input'); const paletteList = ws.querySelector('#ws-palette-list');
@@ -68,7 +81,7 @@
   ws.querySelector('.ws-search-ico').append(ic('discover', 14));
   ws.querySelector('#ws-chat-collapse').append(ic('chevron', 14));
 
-  for (const [id, label, iconName] of SECTIONS) { const b = mk('button', 'hf-tab'); b.type = 'button'; b.dataset.ws = id; b.setAttribute('role', 'tab'); if (id === section) b.setAttribute('aria-selected', 'true'); b.append(ic(iconName, 15), mk('span', '', label)); if (id === 'portfolio') b.append(mk('span', 'hf-badge', '0')); if (id === 'watch') b.append(Object.assign(mk('span', 'hf-badge', '0'), { hidden: true })); if (id === 'research') b.append(Object.assign(mk('span', 'hf-badge', '0'), { hidden: true })); b.onclick = () => { section = id; results.hidden = true; savePrefs(); draw(); }; b.onkeydown = e => { if (!['ArrowLeft', 'ArrowRight'].includes(e.key)) return; e.preventDefault(); const list = [...tabs.querySelectorAll('.hf-tab')]; const i = list.indexOf(e.currentTarget); const next = list[(i + (e.key === 'ArrowRight' ? 1 : -1) + list.length) % list.length]; next.click(); next.focus(); }; tabs.append(b); }
+  for (const [id, label, iconName] of SECTIONS) { const b = mk('button', 'hf-tab'); b.type = 'button'; b.dataset.ws = id; b.setAttribute('role', 'tab'); if (id === section) b.setAttribute('aria-selected', 'true'); b.append(ic(iconName, 15), mk('span', '', label)); if (id === 'portfolio') b.append(mk('span', 'hf-badge', '0')); if (id === 'alerts') b.append(Object.assign(mk('span', 'hf-badge', '0'), { hidden: true })); if (id === 'research') b.append(Object.assign(mk('span', 'hf-badge', '0'), { hidden: true })); b.onclick = () => { section = id; results.hidden = true; savePrefs(); draw(); }; b.onkeydown = e => { if (!['ArrowLeft', 'ArrowRight'].includes(e.key)) return; e.preventDefault(); const list = [...tabs.querySelectorAll('.hf-tab')]; const i = list.indexOf(e.currentTarget); const next = list[(i + (e.key === 'ArrowRight' ? 1 : -1) + list.length) % list.length]; next.click(); next.focus(); }; tabs.append(b); }
 
   const btn = (label, opts = {}, fn) => { const b = mk('button', `hf-btn${opts.variant ? ' ' + opts.variant : ''}${opts.sm ? ' sm' : ''}`); b.type = 'button'; if (opts.icon) b.append(ic(opts.icon, opts.sm ? 14 : 15)); if (label) b.append(mk('span', '', label)); b.onclick = fn; b.disabled = opts.disabled === true; if (opts.title) b.title = opts.title; return b; };
   const ibtn = (iconName, tip, fn) => { const b = mk('button', 'hf-btn icon sm hf-tooltip'); b.type = 'button'; b.append(ic(iconName, 15)); b.setAttribute('aria-label', tip); b.dataset.tip = tip; b.onclick = fn; return b; };
@@ -82,8 +95,8 @@
 
   function selectToken(mint) { chartMint = mint; if (!tokenCache.has(mint)) { tokenCache.set(mint, { loading: true }); call2(window.aurora.walletTokenInfo(mint)).then(info => { tokenCache.set(mint, info); if (open) { if (info.pair?.createdAt && Date.now() - info.pair.createdAt < 2 * 864e5) tradeRange = '1D'; draw(); } }).catch(error => { tokenCache.set(mint, { error: error.message }); if (open) draw(); }); } if (open) draw(); }
   function enterAnimation() { ws.classList.remove('ws-entering'); void ws.offsetWidth; ws.classList.add('ws-entering'); setTimeout(() => ws.classList.remove('ws-entering'), 520); }
-  function openWorkspace(animate) { if (open) { if (animate) enterAnimation(); return; } if (typeof view !== 'undefined' && view.agent !== 'gigi') { window.toast('The trading desk is Gigi’s. Switch to Gigi first.'); return; } open = true; ws.hidden = false; const conversation = document.querySelector('.conversation'); if (conversation) el('ws-chat-slot').append(conversation); el('trading-open')?.setAttribute('aria-current', 'page'); if (animate) enterAnimation(); draw(); call2(window.aurora.load()).then(snapshot => { if (open && snapshot && snapshot.wallet && typeof view !== 'undefined') { view.wallet = snapshot.wallet; draw(); } }).catch(() => {}); call2(window.aurora.walletRefresh()).catch(() => {}); }
-  function close() { if (!open) return; open = false; ws.hidden = true; palette.hidden = true; viewer.hidden = true; el('trading-open')?.removeAttribute('aria-current'); const conversation = document.querySelector('.conversation'); const mainContent = document.querySelector('.main-content'); if (conversation && mainContent) mainContent.insertBefore(conversation, mainContent.querySelector('.companion')); }
+  function openWorkspace(animate) { if (open) { if (animate) enterAnimation(); return; } if (typeof view !== 'undefined' && view.agent !== 'gigi') { window.toast('The trading desk is Gigi’s. Switch to Gigi first.'); return; } open = true; ws.hidden = false; const cryptoButton = el('crypto-open'); if (cryptoButton) cryptoButton.hidden = true; const conversation = document.querySelector('.conversation'); if (conversation) el('ws-chat-slot').append(conversation); el('trading-open')?.setAttribute('aria-current', 'page'); if (animate) enterAnimation(); draw(); call2(window.aurora.load()).then(snapshot => { if (open && snapshot && snapshot.wallet && typeof view !== 'undefined') { view.wallet = snapshot.wallet; draw(); } }).catch(() => {}); call2(window.aurora.walletRefresh()).catch(() => {}); }
+  function close() { if (!open) return; open = false; ws.hidden = true; palette.hidden = true; viewer.hidden = true; el('trading-open')?.removeAttribute('aria-current'); const cryptoButton = el('crypto-open'); if (cryptoButton) cryptoButton.hidden = (typeof view === 'undefined' || view.agent !== 'gigi'); const conversation = document.querySelector('.conversation'); const mainContent = document.querySelector('.main-content'); if (conversation && mainContent) mainContent.insertBefore(conversation, mainContent.querySelector('.companion')); }
 
   const seriesOf = (mint, range) => call2(window.aurora.walletSeries(mint, range)).catch(() => []);
   const RANGES = ['1D', '7D', '30D', '3M', '6M', '1Y', 'ALL'];
@@ -182,11 +195,11 @@
     for (const b of ws.querySelectorAll('#ws-platform button')) b.setAttribute('aria-pressed', String(b.dataset.platform === platform));
     for (const b of ws.querySelectorAll('#ws-seg button')) b.setAttribute('aria-pressed', String((b.dataset.exec === 'live') === isLive));
     ws.querySelector('#ws-seg button[data-exec=live]').classList.toggle('live', isLive);
-    const w = wallet(); el('ws-conn').textContent = !w ? 'Loading…' : (w.wc?.connected ? `Connected · ${((w.wc.accounts[0] || '').split(':').pop() || '').slice(0, 6)}…` : (cfg().addresses?.length ? `${cfg().addresses.length} watched` : 'Not connected'));
+    const w = wallet(); const signerBot = (w?.vault || []).find(bot => bot.id === cfg().vaultWalletId); el('ws-conn').textContent = !w ? 'Loading…' : signerBot ? `Bot · ${signerBot.label}` : (w.wc?.connected ? `Connected · ${((w.wc.accounts[0] || '').split(':').pop() || '').slice(0, 6)}…` : (cfg().addresses?.length ? `${cfg().addresses.length} watched` : 'Not connected'));
     chat.style.width = `${chatW}px`; split.classList.toggle('collapsed', !chatOpen);
     content.replaceChildren();
     const col = mk('div', 'ws-col');
-    const bPortfolio = tabs.querySelector('.hf-tab[data-ws=portfolio] .hf-badge'); const bResearch = tabs.querySelector('.hf-tab[data-ws=research] .hf-badge'); const bWatch = tabs.querySelector('.hf-tab[data-ws=watch] .hf-badge');
+    const bPortfolio = tabs.querySelector('.hf-tab[data-ws=portfolio] .hf-badge'); const bResearch = tabs.querySelector('.hf-tab[data-ws=research] .hf-badge'); const bWatch = tabs.querySelector('.hf-tab[data-ws=alerts] .hf-badge');
     if (bPortfolio) bPortfolio.textContent = (w?.state?.holdings || []).length;
     if (bWatch) { const unread = ((typeof view !== 'undefined' && view.notifications) || []).filter(item => !item.read).length; bWatch.textContent = unread; bWatch.hidden = !unread; }
     if (bResearch) { const n = (w?.research || []).filter(r => r.status === 'running').length; bResearch.textContent = n; bResearch.hidden = !n; }
@@ -194,11 +207,68 @@
     const session = w.session;
     if (session && session.state !== 'RUNNING') { const banner = mk('div', 'ws-banner'); banner.append(mk('span', '', `${session.state.replaceAll('_', ' ')}${session.note ? ` · ${session.note}` : ''}`)); const acts = mk('div', 'ws-ctrls'); if (session.needsConfirmation) acts.append(btn('Reconcile', { sm: true }, run(async () => call2(window.aurora.walletSessionReconcile())))); acts.append(btn('Resume', { sm: true }, run(async () => call2(window.aurora.walletSessionResume())))); banner.append(acts); col.append(banner); }
     const discoverLabel = tabs.querySelector('.hf-tab[data-ws=discover] > span:not(.hf-ico)'); if (discoverLabel) discoverLabel.textContent = platform === 'pumpfun' ? 'Pump.fun' : platform === 'xstocks' ? 'xStocks' : 'Discover';
-    ({ wallets: drawWallets, people: drawPeople, portfolio: drawPortfolio, trade: drawTrade, discover: drawDiscover, watch: drawWatch, research: drawResearch, strategies: drawStrategies, journal: drawJournal })[section](col, w.state);
+    ({ wallets: drawWallets, people: drawPeople, portfolio: drawPortfolio, trade: drawTrade, discover: drawDiscover, alerts: drawAlerts, research: drawResearch, strategies: drawStrategies, journal: drawJournal })[section](col, w.state);
     content.append(col);
   }
 
-  function head(root, title, sub, actions) { const h = mk('div', 'ws-head'); const left = mk('div'); left.append(mk('h1', 'ws-h1', title), mk('p', 'ws-sub', sub)); h.append(left); if (actions) { const a = mk('div', 'ws-head-actions'); a.append(...actions); h.append(a); } root.append(h); }
+  const tutorialTitle = ws.querySelector('#ws-tutorial-title');
+  const tutorialLangs = ws.querySelector('#ws-tutorial-langs');
+  const tutorialBody = ws.querySelector('#ws-tutorial-body');
+  ws.querySelector('#ws-tutorial-close').onclick = () => closeTutorial();
+  tutorial.onclick = event => { if (event.target === tutorial) closeTutorial(); };
+  function tutorialLabel() { return (TUTORIALS.ui[tutorialLang] || TUTORIALS.ui.en || {}).button || 'Tutorial'; }
+  function tutorialSectionKey() {
+    if (section === 'discover') return platform === 'pumpfun' ? 'pumpfun' : platform === 'xstocks' ? 'xstocks' : 'discover';
+    return TUTORIALS.sections[section] ? section : 'wallets';
+  }
+  function syncTutorialButtons() {
+    for (const button of ws.querySelectorAll('.ws-tutorial-btn')) {
+      const label = button.querySelector('span');
+      if (label) label.textContent = tutorialLabel(); else button.textContent = tutorialLabel();
+    }
+  }
+  function renderTutorial() {
+    const key = TUTORIALS.sections[tutorialKey] ? tutorialKey : 'wallets';
+    const lang = TUTORIALS.sections[key]?.[tutorialLang] ? tutorialLang : 'en';
+    const data = TUTORIALS.sections[key]?.[lang] || TUTORIALS.sections[key]?.en;
+    const ui = TUTORIALS.ui[lang] || TUTORIALS.ui.en || {};
+    const names = TUTORIALS.names[lang] || TUTORIALS.names.en || {};
+    tutorialTitle.textContent = names[key] || key;
+    tutorialLangs.replaceChildren();
+    for (const language of TUTORIALS.languages || []) {
+      const button = mk('button', language.id === lang ? 'active' : '', language.short);
+      button.type = 'button'; button.title = language.label;
+      button.onclick = () => {
+        tutorialLang = language.id;
+        try { localStorage.setItem('aurora-tutorial-lang', tutorialLang); } catch {}
+        syncTutorialButtons();
+        renderTutorial();
+      };
+      tutorialLangs.append(button);
+    }
+    tutorialBody.replaceChildren();
+    if (!data) { tutorialBody.append(emptyState('research', 'Tutorial unavailable', 'This language is not ready yet.')); return; }
+    tutorialBody.append(mk('p', 'ws-tutorial-summary', data.summary));
+    tutorialBody.append(mk('h4', '', ui.how || 'How it works'));
+    const flow = mk('ol', 'ws-tutorial-flow');
+    for (const step of data.flow || []) flow.append(mk('li', '', step));
+    tutorialBody.append(flow);
+    tutorialBody.append(mk('h4', '', ui.controls || 'What the controls do'));
+    const actions = mk('ul', 'ws-tutorial-actions');
+    for (const action of data.actions || []) actions.append(mk('li', '', action));
+    tutorialBody.append(actions);
+    const tip = mk('div', 'ws-tutorial-tip');
+    tip.append(mk('strong', '', ui.tip || 'Good to know'), mk('p', '', data.tip || ''));
+    tutorialBody.append(tip);
+  }
+  function openTutorial(key = tutorialSectionKey()) {
+    tutorialKey = TUTORIALS.sections[key] ? key : 'wallets';
+    tutorial.hidden = false;
+    renderTutorial();
+    ws.querySelector('#ws-tutorial-close').focus();
+  }
+  function closeTutorial() { tutorial.hidden = true; }
+  function head(root, title, sub, actions) { const h = mk('div', 'ws-head'); const left = mk('div'); left.append(mk('h1', 'ws-h1', title), mk('p', 'ws-sub', sub)); h.append(left); const a = mk('div', 'ws-head-actions'); const guide = btn(tutorialLabel(), { sm: true, variant: 'ghost' }, () => openTutorial()); guide.classList.add('ws-tutorial-btn'); a.append(guide); if (actions) a.append(...actions); h.append(a); root.append(h); }
   const metric = (label, value, cls) => { const c = mk('div', 'ws-stat'); c.append(mk('small', '', label)); const b = mk('b', '', value); if (cls) b.className = cls; c.append(b); return c; };
   function listItem(name, sub, value, change, controls, badge) { const item = mk('div', 'ws-item'); const left = mk('div'); left.append(mk('strong', '', name)); if (sub) left.append(mk('small', '', sub)); const right = mk('div', 'ws-ctrls'); if (change !== undefined && change !== null) right.append(mk('small', change >= 0 ? 'hf-up' : 'hf-down', `${change >= 0 ? '+' : ''}${Number(change).toFixed(2)}%`)); if (value !== undefined) right.append(mk('strong', '', value)); if (badge) right.append(badge); if (controls) right.append(controls); item.append(left, right); return item; }
   function field(label, type, options) { const d = mk('div', 'hf-field'); d.append(mk('label', '', label)); if (type === 'select') { const s = mk('select', 'hf-input'); for (const o of options) s.append(mk('option', '', o)); d.append(s); } else { const i = mk('input', 'hf-input'); i.type = type; i.step = 'any'; if (/buy/i.test(label)) i.value = '25'; d.append(i); } return d; }
@@ -225,25 +295,105 @@
     if (list.childElementCount) form.append(list);
     return form;
   }
+  const SIGNAL_PRESETS = [
+    { id: 'price', kicker: 'PRICE', title: 'Price alert', desc: 'Tell me when the price crosses a level.', condition: { metric: 'price', op: 'above', value: 0, windowMinutes: 0 } },
+    { id: 'dip', kicker: 'DRAWDOWN', title: '24h dip', desc: 'Tell me when the token is down hard on the day.', condition: { metric: 'change24h', op: 'below', value: -20, windowMinutes: 0 } },
+    { id: 'spike', kicker: 'MOMENTUM', title: '1h spike', desc: 'Tell me when the last hour accelerates.', condition: { metric: 'change', op: 'above', value: 10, windowMinutes: 60 } },
+    { id: 'research', kicker: 'RESEARCH GATE', title: 'Only with research', desc: 'Only fire when a fresh research report exists.', condition: { metric: 'change24h', op: 'below', value: -15, windowMinutes: 0 }, requireResearch: true },
+    { id: 'custom', kicker: 'YOUR RULE', title: 'Start from scratch', desc: 'Build a custom condition.', condition: { metric: 'change24h', op: 'below', value: -10, windowMinutes: 0 } }
+  ];
+  function startSignalComposer(presetId = 'custom', existing = null) {
+    const preset = SIGNAL_PRESETS.find(item => item.id === presetId) || SIGNAL_PRESETS[SIGNAL_PRESETS.length - 1];
+    const fallback = chartMint || (state().holdings || [])[0]?.mint || (state().markets || [])[0]?.mint || '';
+    signalEditingId = existing?.id || '';
+    signalPreset = existing ? 'custom' : presetId;
+    signalDraft = existing ? {
+      name: existing.name || 'Signal', mint: existing.mint || '', symbol: existing.symbol || '',
+      condition: { ...existing.condition }, action: existing.action === 'paper-buy' ? 'paper-buy' : 'notify',
+      usd: Number(existing.usd) || 25, cooldownSec: Number(existing.cooldownSec) || 3600, requireResearch: existing.requireResearch === true
+    } : {
+      name: preset.title, mint: fallback, symbol: sym(fallback, state()),
+      condition: { ...preset.condition }, action: 'notify', usd: 25, cooldownSec: 3600,
+      requireResearch: preset.requireResearch === true
+    };
+    signalComposerOpen = true; draw();
+  }
+  function closeSignalComposer() { signalComposerOpen = false; signalDraft = null; signalEditingId = ''; draw(); }
   function signalForm(s) {
-    const fallback = chartMint || (s.holdings || [])[0]?.mint || (s.markets || [])[0]?.mint || '';
-    const name = field('Name', 'text'); name.querySelector('input').value = 'Signal';
-    const token = field('Token mint', 'text'); token.querySelector('input').value = fallback; token.querySelector('input').spellcheck = false;
+    if (!signalComposerOpen || !signalDraft) {
+      const presets = mk('div', 'ws-signal-presets');
+      for (const preset of SIGNAL_PRESETS) {
+        const card = mk('button', 'ws-strategy-template ws-signal-preset' + (signalPreset === preset.id ? ' active' : ''));
+        card.type = 'button';
+        card.append(mk('span', 'ws-strategy-kicker', preset.kicker), mk('strong', '', preset.title), mk('p', '', preset.desc), mk('small', '', `${strategyConditionText(preset.condition, preset.condition.windowMinutes)}${preset.requireResearch ? ' · needs fresh research' : ''}`));
+        card.onclick = () => startSignalComposer(preset.id);
+        presets.append(card);
+      }
+      return presets;
+    }
+    const draft = signalDraft;
+    const name = field('Name', 'text'); name.querySelector('input').value = draft.name;
+    const token = field('Token mint', 'text'); token.querySelector('input').value = draft.mint; token.querySelector('input').spellcheck = false;
     const metric = field('Metric', 'select', ['price', 'change24h', 'change']);
+    metric.querySelector('select').value = draft.condition.metric;
     const op = field('Operator', 'select', ['above', 'below', 'crossAbove', 'crossBelow']);
-    const value = field('Value', 'number');
-    const action = field('Action', 'select', ['notify', 'paper-buy']);
-    const usd = field('Paper buy USD', 'number');
-    const cooldown = field('Cooldown (min)', 'number'); cooldown.querySelector('input').value = '60';
-    const gate = checkField('Require fresh research');
-    const add = btn('Create signal', { sm: true, variant: 'primary', icon: 'alert' }, run(async () => {
-      const mint = (inputOf(token) || fallback).trim();
-      if (!mint) throw Error('Enter a token mint.');
-      const data = await call2(window.aurora.walletSignalSave({ name: inputOf(name) || 'Signal', mint, symbol: sym(mint, s), condition: { metric: selectOf(metric), op: selectOf(op), value: Number(inputOf(value)) }, action: selectOf(action), usd: Number(inputOf(usd)) || 25, cooldownSec: Math.round((Number(inputOf(cooldown)) || 60) * 60), requireResearch: checkedOf(gate) }));
-      window.toast('Signal created.'); return data;
+    op.querySelector('select').value = draft.condition.op;
+    const value = field('Value', 'number'); value.querySelector('input').value = String(draft.condition.value ?? '');
+    const windowField = field('Window for change', 'select', ['15m', '1h', '4h', '24h']); const windowValues = [15, 60, 240, 1440]; [...windowField.querySelectorAll('option')].forEach((option, index) => { option.value = String(windowValues[index]); }); windowField.querySelector('select').value = String(draft.condition.windowMinutes || 60); windowField.hidden = draft.condition.metric !== 'change';
+    const action = field('Action', 'select', ['notify', 'paper-buy']); action.querySelector('select').value = draft.action;
+    const usd = field('Paper buy USD', 'number'); usd.querySelector('input').value = String(draft.usd || 25); usd.hidden = draft.action !== 'paper-buy';
+    const cooldown = field('Cooldown (min)', 'number'); cooldown.querySelector('input').value = String(Math.round((draft.cooldownSec || 3600) / 60));
+    const gate = checkField('Require fresh research'); gate.querySelector('input').checked = draft.requireResearch === true;
+    const preview = mk('p', 'ws-strategy-preview');
+    const refresh = () => {
+      draft.name = inputOf(name) || 'Signal'; draft.mint = inputOf(token).trim(); draft.symbol = sym(draft.mint, s);
+      draft.condition = { metric: selectOf(metric), op: selectOf(op), value: Number(inputOf(value)), windowMinutes: selectOf(metric) === 'change' ? Number(selectOf(windowField)) || 60 : 0 };
+      draft.action = selectOf(action); draft.usd = Number(inputOf(usd)) || 25; draft.cooldownSec = Math.round((Number(inputOf(cooldown)) || 60) * 60); draft.requireResearch = checkedOf(gate);
+      windowField.hidden = draft.condition.metric !== 'change'; usd.hidden = draft.action !== 'paper-buy';
+      preview.textContent = `${draft.action === 'paper-buy' ? `Paper buy ${money(draft.usd)} when` : 'Notify me when'} ${strategyConditionText(draft.condition, draft.condition.windowMinutes)}${draft.requireResearch ? ', only with fresh research' : ''}.`;
+    };
+    for (const input of [name, token, value, usd, cooldown]) input.querySelector('input').oninput = refresh;
+    for (const select of [metric, op, windowField, action]) select.querySelector('select').onchange = refresh;
+    gate.querySelector('input').onchange = refresh;
+    refresh();
+    const save = btn(signalEditingId ? 'Save signal' : 'Create signal', { sm: true, variant: 'primary', icon: 'alert' }, run(async () => {
+      refresh();
+      if (!draft.mint) throw Error('Enter a token mint.');
+      const data = await call2(window.aurora.walletSignalSave({ ...(signalEditingId ? { id: signalEditingId } : {}), name: draft.name, mint: draft.mint, symbol: draft.symbol, condition: draft.condition, action: draft.action, usd: draft.usd, cooldownSec: draft.cooldownSec, requireResearch: draft.requireResearch }));
+      window.toast(signalEditingId ? 'Signal updated.' : 'Signal created.');
+      signalComposerOpen = false; signalDraft = null; signalEditingId = '';
+      return data;
     }));
-    const form = mk('div', 'ws-form'); form.append(name, token, metric, op, value, action, usd, cooldown, gate);
-    const actions = mk('div', 'ws-form-actions'); actions.append(add); form.append(actions); return form;
+    const cancel = btn('Cancel', { sm: true, variant: 'ghost' }, closeSignalComposer);
+    const form = mk('div', 'ws-form ws-signal-form'); form.append(name, token, metric, op, value, windowField, action, usd, cooldown, gate);
+    const actions = mk('div', 'ws-form-actions'); actions.append(cancel, save); form.append(actions);
+    return panel(signalEditingId ? 'Edit signal' : 'Build a signal', {}, form, preview);
+  }
+  function signalCard(sg) {
+    const card = mk('div', `ws-strategy-card ws-signal-card${sg.enabled ? ' active' : ''}`);
+    const head = mk('div', 'ws-strategy-card-head');
+    const title = mk('div', 'ws-strategy-card-title');
+    title.append(mk('strong', '', sg.name), mk('small', '', `${sg.symbol || short(sg.mint)} · ${sg.enabled ? 'watching' : 'paused'}`));
+    head.append(title, mk('span', `hf-badge${sg.enabled ? ' ok' : ' muted'}`, sg.action === 'paper-buy' ? 'paper buy' : 'notify'));
+    const rule = mk('p', 'ws-strategy-rule', `${sg.action === 'paper-buy' ? `Buy ${money(sg.usd)} when` : 'Notify when'} ${strategyConditionText(sg.condition, sg.condition.windowMinutes)}.`);
+    const chips = mk('div', 'ws-strategy-chips');
+    chips.append(mk('span', 'ws-strategy-chip', `Cooldown ${strategyCooldown(sg.cooldownSec)}`));
+    if (sg.requireResearch) chips.append(mk('span', 'ws-strategy-chip', 'Fresh research required'));
+    if (sg.lastTriggeredAt) chips.append(mk('span', 'ws-strategy-chip', `Last ${ageLabel(sg.lastTriggeredAt)} ago`));
+    const actions = mk('div', 'ws-strategy-card-actions');
+    actions.append(btn('Edit', { sm: true, variant: 'ghost', icon: 'alert' }, () => startSignalComposer('custom', sg)));
+    actions.append(btn(sg.enabled ? 'Pause' : 'Enable', { sm: true, variant: sg.enabled ? 'ghost' : 'primary', icon: sg.enabled ? 'pause' : 'play' }, run(async () => call2(window.aurora.walletSignalToggle(sg.id, !sg.enabled)))));
+    actions.append(ibtn('delete', 'Delete', run(async () => call2(window.aurora.walletSignalRemove(sg.id)))));
+    card.append(head, rule, chips, actions);
+    if (sg.lastDetail) card.append(mk('p', 'ws-strategy-last', `Last: ${sg.lastDetail}`));
+    return card;
+  }
+  function signalListBody() {
+    const sigs = wallet()?.signals || [];
+    if (!sigs.length) return emptyState('alert', 'No signals yet', 'Pick a preset above, or ask Gigi: “ping me when SOL drops 20%.”');
+    const grid = mk('div', 'ws-strategy-grid ws-signal-grid');
+    for (const sg of sigs) grid.append(signalCard(sg));
+    return grid;
   }
   // Live swap with an explicit confirmation showing decoded amounts before signing.
   async function executeLive({ mint, side, amountUi, usd, symbol }) {
@@ -251,8 +401,10 @@
     if (!(value > 0)) throw Error('Enter an amount.');
     const preview = await call2(window.aurora.walletSwapPreview({ mint, amountUi: value, side, slippageBps: 50 }));
     const sim = preview.simulation?.ok ? 'simulation ok' : `simulation failed${preview.simulation?.error ? `: ${preview.simulation.error}` : ''}`;
+    const readiness = preview.readiness;
+    const walletLine = readiness ? `${readiness.signerType === 'vault' ? 'Bot wallet' : 'Connected wallet'} ${amount(readiness.balanceSol)} SOL · RPC ${readiness.rpcOk ? 'ok' : 'unreachable'}` : 'Wallet not checked';
     const detail = side === 'buy' ? `Buy ≈${amount(value)} ${(symbol || short(mint)).trim()} for ${money(usd)}` : `Sell ${amount(value)} ${(symbol || short(mint)).trim()}`;
-    if (!window.confirm(`${detail}\nMin out ${preview.summary.minimumOut} · impact ${Number(preview.summary.priceImpactPct || 0).toFixed(2)}% · ${sim}\n\nSign this live transaction?`)) return null;
+    if (!window.confirm(`${detail}\n${walletLine}\nMin out ${preview.summary.minimumOut} · impact ${Number(preview.summary.priceImpactPct || 0).toFixed(2)}% · ${sim}\n\nSign this live transaction?`)) return null;
     const result = await call2(window.aurora.walletSwapExecute({ mint, amountUi: value, side, slippageBps: 50 }));
     window.toast(`Live ${side} ${result.status}${result.signature ? ` · ${result.signature.slice(0, 8)}…` : ''}`);
     return call2(window.aurora.load());
@@ -275,8 +427,7 @@
   function followSummary(item) {
     const scan = item.scan;
     if (!scan) return 'No scan yet.';
-    const top = (scan.holdings || []).slice(0, 6).map(h => `${h.symbol} ${Math.round((h.share || 0) * 100)}%`).join(', ');
-    return `${money(scan.total)}, SOL ${amount(scan.sol)}, ${scan.tokenCount} tokens, top 10 ${(scan.top10Share * 100).toFixed(1)}%${top ? `, top holdings ${top}` : ''}${scan.lastActive ? `, last active ${new Date(scan.lastActive).toLocaleString()}` : ''}`;
+    return `${walletInsightText(scan)}${scan.lastActive ? ` Last active ${new Date(scan.lastActive).toLocaleString()}.` : ''}`;
   }
   function askAboutWallet(item, question) {
     const text = (question || '').trim();
@@ -302,70 +453,104 @@
     const actions = mk('div', 'ws-form-actions'); actions.append(cancel, copy); form.append(actions);
     return panel('Copy to paper', {}, mk('p', 'ws-sub', `Paper only. Buys the top scanned holdings with up to ${money(paper()?.cash)} of paper cash, including the simulated fee. Stablecoins are skipped.`), form);
   }
-  function followDetail(item, s) {
+  function walletStatus(item) {
     const scan = item.scan || {};
-    const card = mk('div', 'hf-panel ws-followdetail');
-    const heading = mk('header');
-    const title = mk('div', 'ws-followtitle');
-    title.append(mk('strong', '', item.label || short(item.address)), mk('small', 'mono', item.address));
-    const controls = mk('div', 'ws-ctrls');
-    controls.append(
-      btn('Scan', { sm: true, variant: 'ghost', icon: 'refresh' }, run(async () => { window.toast('Scanning wallet…'); return call2(window.aurora.walletFollowScan(item.id)); })),
-      btn('Brief', { sm: true, variant: 'primary', icon: 'research' }, run(async () => { window.toast('Gigi is writing the brief…'); return call2(window.aurora.walletFollowBrief(item.id)); })),
-      btn('Copy', { sm: true, variant: 'ghost', icon: 'paper' }, () => { copyOpen = copyOpen === item.id ? '' : item.id; draw(); }),
-      ibtn('external', 'Open in Solscan', () => call2(window.aurora.openLink(`https://solscan.io/account/${item.address}`)).catch(error => window.toast(error.message))),
-      ibtn('delete', 'Stop following', run(async () => { followSelected = ''; copyOpen = ''; return call2(window.aurora.walletFollowRemove(item.id)); }))
+    if (item.lastError) return { label: 'scan failed', cls: ' live', badge: 'error' };
+    if (!scan.at) return { label: 'not scanned', cls: ' muted', badge: 'new' };
+    return { label: `scanned ${ageLabel(scan.at)} ago`, cls: ' ok', badge: 'scanned' };
+  }
+  function walletCoverageLabel(value) {
+    if (value >= 95) return 'all priced value is in 10 or fewer positions';
+    if (value >= 75) return 'concentrated in a few positions';
+    if (value >= 40) return 'moderately spread across positions';
+    return 'fairly diversified';
+  }
+  function walletInsightText(scan) {
+    const positions = Number(scan.pricedCount) || (scan.holdings || []).length;
+    const accounts = Number(scan.tokenCount) || positions;
+    const largest = (scan.holdings || [])[0];
+    const parts = [`This wallet has ${positions} priced position${positions === 1 ? '' : 's'} worth ${money(scan.total)}.`];
+    if (largest) parts.push(`Largest is ${largest.symbol} at ${Math.round((largest.share || 0) * 100)}% of priced value.`);
+    const coverage = Number(scan.top10Share || 0) * 100;
+    if (coverage > 0) parts.push(`Top-10 coverage is ${coverage.toFixed(1)}% — ${walletCoverageLabel(coverage)}.`);
+    if (accounts > positions + 5) parts.push(`${accounts.toLocaleString()} token accounts exist in total, but only ${positions} have a live price; most are likely spam or dust.`);
+    return parts.join(' ');
+  }
+  function walletInsight(scan) {
+    const box = mk('div', 'ws-wallet-insight');
+    box.append(mk('strong', '', 'What this overview means'), mk('p', '', walletInsightText(scan)));
+    return box;
+  }
+  function walletStat(label, value, title, cls) {
+    const cell = metric(label, value, cls);
+    if (title) cell.title = title;
+    return cell;
+  }
+  function walletStatbar(scan) {
+    const positions = Number(scan.pricedCount) || (scan.holdings || []).length;
+    const stats = mk('div', 'ws-statbar');
+    stats.append(
+      walletStat('Priced value', scan.total >= 1e6 ? `$${compact(scan.total)}` : money(scan.total), 'Value of priced holdings only. Unpriced spam tokens are excluded.'),
+      walletStat('24h', `${(scan.change24h || 0) >= 0 ? '+' : ''}${(scan.change24h || 0).toFixed(2)}%`, 'Change in the wallet value Aurora tracks, not realized PnL.', (scan.change24h || 0) >= 0 ? 'hf-up' : 'hf-down'),
+      walletStat('SOL', scan.sol >= 1e6 ? compact(scan.sol) : amount(scan.sol), 'Native SOL balance.'),
+      walletStat('Positions', String(positions), `${Number(scan.tokenCount) || positions} token accounts in total. Only priced positions are counted here.`),
+      walletStat('Top-10 coverage', `${((scan.top10Share || 0) * 100).toFixed(1)}%`, 'Share of priced value in the 10 largest positions. 100% simply means the wallet has 10 or fewer priced positions.')
     );
-    heading.append(title, controls);
-    const body = mk('div', 'hf-body');
-    const badge = mk('span', `hf-badge${item.lastError ? ' live' : scan.at ? ' ok' : ' muted'}`, item.lastError ? 'scan failed' : scan.at ? `scanned ${ageLabel(scan.at)} ago` : 'not scanned');
-    body.append(badge);
-    if (item.lastError) body.append(mk('p', 'ws-sub ws-note', item.lastError));
-    if (scan.at) {
-      const stats = mk('div', 'ws-statbar');
-      stats.append(metric('Value', scan.total >= 1e6 ? `$${compact(scan.total)}` : money(scan.total)), metric('24h', `${(scan.change24h || 0) >= 0 ? '+' : ''}${(scan.change24h || 0).toFixed(2)}%`, (scan.change24h || 0) >= 0 ? 'hf-up' : 'hf-down'), metric('SOL', scan.sol >= 1e6 ? compact(scan.sol) : amount(scan.sol)), metric('Tokens', String(scan.tokenCount || 0)), metric('Top 10', `${((scan.top10Share || 0) * 100).toFixed(1)}%`));
-      body.append(stats);
-      const holdings = (scan.holdings || []).slice(0, 12);
-      if (holdings.length) {
-        const table = mk('table', 'hf-table ws-follow-table');
-        const thead = mk('thead'); const htr = mk('tr'); for (const [label, n] of [['Token', false], ['Amount', true], ['Value', true], ['24h', true], ['Share', true], ['', false]]) htr.append(mk('th', n ? 'num' : '', label)); thead.append(htr); table.append(thead);
-        const tb = mk('tbody');
-        for (const h of holdings) {
-          const tr = mk('tr'); const td0 = mk('td'); td0.append(mk('span', 'ws-sym', h.symbol), mk('small', 'ws-row-name', h.name || short(h.mint)));
-          const act = mk('td', 'num'); act.append(
-            ibtn('trade', 'Trade', () => { section = 'trade'; selectToken(h.mint); savePrefs(); draw(); }),
-            ibtn('research', 'Research token', run(async () => call2(window.aurora.walletResearchStart({ mint: h.mint, symbol: h.symbol })))),
-            ibtn('watch', 'Watch token', run(async () => { const data = await call2(window.aurora.walletWatchlistAdd(h.mint)); window.toast(`${h.symbol} watched.`); return data; }))
-          );
-          tr.append(td0, mk('td', 'num', amount(h.amount)), mk('td', 'num', money(h.value)), mk('td', `num ${(h.change24h || 0) >= 0 ? 'hf-up' : 'hf-down'}`, `${(h.change24h || 0) >= 0 ? '+' : ''}${(h.change24h || 0).toFixed(2)}%`), mk('td', 'num', `${Math.round((h.share || 0) * 100)}%`), act);
-          tb.append(tr);
-        }
-        table.append(tb);
-        const tableWrap = mk('div', 'ws-table-scroll'); tableWrap.append(table); body.append(tableWrap);
-      } else body.append(emptyState('portfolio', 'No priced holdings', 'The wallet holds tokens with no price yet, or the RPC returned nothing.'));
-      if ((scan.unpriced || []).length) body.append(mk('p', 'ws-sub ws-note', `${scan.unpriced.length} unpriced token${scan.unpriced.length === 1 ? '' : 's'} not shown: ${scan.unpriced.slice(0, 6).map(t => t.name || t.symbol).join(', ')}.`));
-      const recent = (scan.recent || []).slice(0, 8);
-      if (recent.length) {
-        const list = mk('div', 'ws-list ws-followactivity');
-        for (const tx of recent) list.append(listItem(short(tx.signature), `${tx.blockTime ? new Date(tx.blockTime * 1000).toLocaleString() : 'unknown time'}${tx.err ? ' · failed' : ''}`));
-        body.append(mk('small', 'ws-section-label', 'Recent activity'), list);
-      }
-      const parsed = (scan.parsed || []).slice(0, 10);
-      if (parsed.length) {
-        const list = mk('div', 'ws-list ws-followactivity');
-        for (const tx of parsed) list.append(listItem(tx.description || tx.type || 'Transaction', `${tx.timestamp ? new Date(tx.timestamp).toLocaleString() : 'unknown time'}${tx.type ? ` · ${tx.type.replaceAll('_', ' ').toLowerCase()}` : ''}`));
-        body.append(mk('small', 'ws-section-label', 'Parsed activity'), list);
-      } else if (!(typeof view !== 'undefined' && view.heliusHasKey)) {
-        body.append(mk('p', 'ws-sub ws-note', 'Add a Helius key in Settings, Connections to unlock parsed swap descriptions.'));
-      }
-    } else {
-      body.append(emptyState('wallet', 'No scan yet', 'Choose Scan to read holdings and recent activity, or ask Gigi to brief this wallet.'));
+    return stats;
+  }
+  function walletHoldingsTable(scan, limit = 12) {
+    const holdings = (scan.holdings || []).slice(0, limit);
+    if (!holdings.length) return emptyState('portfolio', 'No priced holdings', 'The wallet holds tokens with no price yet, or the RPC returned nothing.');
+    const table = mk('table', 'hf-table ws-follow-table');
+    const thead = mk('thead'); const htr = mk('tr');
+    for (const [label, n] of [['Token', false], ['Amount', true], ['Value', true], ['24h', true], ['Share', true], ['', false]]) htr.append(mk('th', n ? 'num' : '', label));
+    thead.append(htr); table.append(thead);
+    const tb = mk('tbody');
+    for (const h of holdings) {
+      const tr = mk('tr'); const td0 = mk('td'); td0.append(mk('span', 'ws-sym', h.symbol), mk('small', 'ws-row-name', h.name || short(h.mint)));
+      const act = mk('td', 'num'); act.append(
+        ibtn('trade', 'Trade', () => { section = 'trade'; selectToken(h.mint); savePrefs(); draw(); }),
+        ibtn('research', 'Research token', run(async () => call2(window.aurora.walletResearchStart({ mint: h.mint, symbol: h.symbol })))),
+        ibtn('watch', 'Watch token', run(async () => { const data = await call2(window.aurora.walletWatchlistAdd(h.mint)); window.toast(`${h.symbol} watched.`); return data; }))
+      );
+      tr.append(td0, mk('td', 'num', amount(h.amount)), mk('td', 'num', money(h.value)), mk('td', `num ${(h.change24h || 0) >= 0 ? 'hf-up' : 'hf-down'}`, `${(h.change24h || 0) >= 0 ? '+' : ''}${(h.change24h || 0).toFixed(2)}%`), mk('td', 'num', `${Math.round((h.share || 0) * 100)}%`), act);
+      tb.append(tr);
     }
-    if (copyOpen === item.id) body.append(copyForm(item));
+    table.append(tb);
+    const wrap = mk('div', 'ws-table-scroll'); wrap.append(table); return wrap;
+  }
+  function walletActivityList(scan) {
+    const box = mk('div');
+    const recent = (scan.recent || []).slice(0, 8);
+    if (recent.length) {
+      const list = mk('div', 'ws-list ws-followactivity');
+      for (const tx of recent) list.append(listItem(short(tx.signature), `${tx.blockTime ? new Date(tx.blockTime * 1000).toLocaleString() : 'unknown time'}${tx.err ? ' · failed' : ''}`));
+      box.append(mk('small', 'ws-section-label', 'Recent signatures'), list);
+    }
+    const parsed = (scan.parsed || []).slice(0, 10);
+    if (parsed.length) {
+      const list = mk('div', 'ws-list ws-followactivity');
+      for (const tx of parsed) list.append(listItem(tx.description || tx.type || 'Transaction', `${tx.timestamp ? new Date(tx.timestamp).toLocaleString() : 'unknown time'}${tx.type ? ` · ${tx.type.replaceAll('_', ' ').toLowerCase()}` : ''}`));
+      box.append(mk('small', 'ws-section-label', 'Parsed activity'), list);
+    }
+    if (!recent.length && !parsed.length) box.append(emptyState('wallet', 'No activity yet', 'Scan the wallet to load recent signatures and parsed transactions.'));
+    if (!(typeof view !== 'undefined' && view.heliusHasKey)) box.append(mk('p', 'ws-sub ws-note', 'Add a Helius key in Settings, Connections to unlock parsed swap descriptions.'));
+    return box;
+  }
+  function walletAutomationBody(item) {
+    const box = mk('div');
     const alerts = checkField('Alert me when this wallet moves');
     const alertBox = alerts.querySelector('input'); alertBox.checked = item.watchActivity !== false;
     alertBox.onchange = run(async () => { const data = await call2(window.aurora.walletFollowUpdate({ id: item.id, watchActivity: alertBox.checked })); window.toast(alertBox.checked ? 'Activity alerts on.' : 'Activity alerts off.'); return data; });
-    body.append(alerts);
+    box.append(panel('Alerts', {}, alerts));
+    if (copyOpen === item.id) box.append(copyForm(item));
+    else {
+      const copyRow = mk('div', 'ws-wallet-automation-row');
+      const copyCopy = mk('div');
+      copyCopy.append(mk('strong', '', 'Copy to paper'), mk('small', '', `Buy the top scanned holdings with up to ${money(paper()?.cash)} paper cash.`));
+      copyRow.append(copyCopy, btn('Copy to paper', { sm: true, variant: 'ghost', icon: 'paper' }, () => { walletTab = 'automation'; copyOpen = item.id; draw(); }));
+      box.append(panel('', {}, copyRow));
+    }
     const mirrorOn = checkField('Auto-mirror new activity into paper');
     mirrorOn.querySelector('input').checked = item.autoMirror === true;
     const mirrorBudget = field('Mirror budget (USD)', 'number'); mirrorBudget.querySelector('input').value = String(item.mirrorBudgetUsd || 25);
@@ -378,20 +563,76 @@
     }));
     const mirrorForm = mk('div', 'ws-form ws-mirrorform'); mirrorForm.append(mirrorOn, mirrorBudget, mirrorMax);
     const mirrorActions = mk('div', 'ws-form-actions'); mirrorActions.append(saveMirror); mirrorForm.append(mirrorActions);
-    body.append(panel('Auto-mirror', {}, mirrorForm, mk('p', 'ws-sub ws-note', 'Paper only. Budget is per activity event and respects paper cash, the daily cap and the position cap. Without Helius, only new buys are mirrored; sells require parsed transfers.')));
-    body.append(mk('p', 'ws-sub ws-note', item.mirrorError || item.mirrorLastResult || 'No mirror run yet. The first activity check records a baseline.'));
-    if (item.activityError) body.append(mk('p', 'ws-sub ws-note', `Activity check: ${item.activityError}`));
-    else if (item.lastActivityAt) body.append(mk('p', 'ws-sub ws-note', `Last on-chain activity ${new Date(item.lastActivityAt).toLocaleString()}.`));
-    const note = mk('textarea', 'hf-input'); note.rows = 2; note.value = item.note || ''; note.placeholder = 'Why are you watching this wallet?';
-    const saveNote = btn('Save note', { sm: true, variant: 'ghost' }, run(async () => { const data = await call2(window.aurora.walletFollowUpdate({ id: item.id, label: item.label, tags: item.tags, note: note.value })); window.toast('Note saved.'); return data; }));
-    const noteRow = mk('div', 'ws-follownote'); noteRow.append(note, saveNote);
-    body.append(noteRow);
+    box.append(panel('Auto-mirror', {}, mirrorForm, mk('p', 'ws-sub ws-note', 'Paper only. Budget is per activity event and respects paper cash, the daily cap and the position cap. Without Helius, only new buys are mirrored; sells require parsed transfers.')));
+    box.append(mk('p', 'ws-sub ws-note', item.mirrorError || item.mirrorLastResult || 'No mirror run yet. The first activity check records a baseline.'));
+    if (item.activityError) box.append(mk('p', 'ws-sub ws-note', `Activity check: ${item.activityError}`));
+    else if (item.lastActivityAt) box.append(mk('p', 'ws-sub ws-note', `Last on-chain activity ${new Date(item.lastActivityAt).toLocaleString()}.`));
+    return box;
+  }
+  function walletNotesBody(item) {
+    const box = mk('div');
+    const note = mk('textarea', 'hf-input'); note.rows = 3; note.value = item.note || ''; note.placeholder = 'Why are you watching this wallet?';
+    const saveNote = btn('Save note', { sm: true, variant: 'primary' }, run(async () => { const data = await call2(window.aurora.walletFollowUpdate({ id: item.id, label: item.label, tags: item.tags, note: note.value })); window.toast('Note saved.'); return data; }));
+    const noteRow = mk('div', 'ws-follownote'); noteRow.append(note, saveNote); box.append(panel('Wallet note', {}, noteRow));
     const ask = mk('input', 'hf-input'); ask.type = 'text'; ask.placeholder = 'Ask Gigi about this wallet';
     const askBtn = btn('Ask', { sm: true, variant: 'ghost', icon: 'chat' }, () => askAboutWallet(item, ask.value));
     ask.addEventListener('keydown', event => { if (event.key === 'Enter') askBtn.click(); });
-    const askRow = mk('div', 'ws-followask'); askRow.append(ask, askBtn);
-    body.append(askRow);
-    card.append(heading, body); return card;
+    const askRow = mk('div', 'ws-followask ws-wallet-ask'); askRow.append(ask, askBtn);
+    box.append(panel('Ask Gigi', {}, askRow));
+    return box;
+  }
+  function followDetail(item, s) {
+    const scan = item.scan || {};
+    const status = walletStatus(item);
+    const card = mk('div', 'hf-panel ws-wallet-detail');
+    const heading = mk('div', 'ws-wallet-detail-head');
+    const title = mk('div', 'ws-wallet-detail-title');
+    title.append(mk('strong', '', item.label || short(item.address)), mk('small', 'mono', item.address));
+    const controls = mk('div', 'ws-ctrls');
+    controls.append(btn('Scan', { sm: true, variant: 'primary', icon: 'refresh' }, run(async () => { window.toast('Scanning wallet…'); return call2(window.aurora.walletFollowScan(item.id)); })));
+    const menu = mk('details', 'ws-wallet-menu');
+    const summary = mk('summary', ''); summary.textContent = '⋯'; summary.title = 'Wallet actions'; summary.setAttribute('aria-label', 'Wallet actions'); menu.append(summary);
+    const menuPanel = mk('div', 'ws-wallet-menu-panel');
+    const menuButton = (label, action, danger = false) => { const b = mk('button', danger ? 'danger' : '', label); b.type = 'button'; b.onclick = action; return b; };
+    menuPanel.append(
+      menuButton('Brief', run(async () => { window.toast('Gigi is writing the brief…'); return call2(window.aurora.walletFollowBrief(item.id)); })),
+      menuButton('Copy to paper', () => { menu.open = false; walletTab = 'automation'; copyOpen = item.id; draw(); }),
+      menuButton('Ask Gigi', () => { menu.open = false; walletTab = 'notes'; draw(); setTimeout(() => card.querySelector('.ws-wallet-ask input')?.focus(), 0); }),
+      menuButton('Solscan', () => call2(window.aurora.openLink(`https://solscan.io/account/${item.address}`)).catch(error => window.toast(error.message))),
+      menuButton('Stop following', run(async () => { followSelected = ''; copyOpen = ''; return call2(window.aurora.walletFollowRemove(item.id)); }), true)
+    );
+    menu.append(menuPanel);
+    controls.append(menu);
+    heading.append(title, mk('span', `hf-badge${status.cls}`, status.badge), mk('span', 'ws-top-spacer'), controls);
+    const tabs = mk('div', 'ws-wallet-tabs');
+    for (const [id, label] of [['overview', 'Overview'], ['holdings', 'Holdings'], ['activity', 'Activity'], ['automation', 'Automation'], ['notes', 'Notes']]) {
+      const b = mk('button', walletTab === id ? 'active' : '', label); b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(walletTab === id));
+      b.onclick = () => { walletTab = id; draw(); }; tabs.append(b);
+    }
+    const body = mk('div', 'ws-wallet-tabbody');
+    if (walletTab === 'overview') {
+      if (scan.at) {
+        body.append(walletInsight(scan));
+        body.append(walletStatbar(scan));
+        if ((scan.holdings || []).length) body.append(panel('Top holdings', {}, walletHoldingsTable(scan, 6)));
+        const recent = (scan.recent || []).slice(0, 3);
+        if (recent.length) { const list = mk('div', 'ws-list ws-followactivity'); for (const tx of recent) list.append(listItem(short(tx.signature), tx.blockTime ? new Date(tx.blockTime * 1000).toLocaleString() : 'unknown time')); body.append(panel('Latest activity', {}, list)); }
+        if ((scan.unpriced || []).length) body.append(mk('p', 'ws-sub ws-note', `${scan.unpriced.length} unpriced token${scan.unpriced.length === 1 ? '' : 's'} not shown: ${scan.unpriced.slice(0, 6).map(t => t.name || t.symbol).join(', ')}.`));
+      } else body.append(emptyState('wallet', 'No scan yet', 'Choose Scan to read holdings and recent activity, or ask Gigi to brief this wallet.'));
+    } else if (walletTab === 'holdings') {
+      if (scan.at) {
+        body.append(walletHoldingsTable(scan, 12));
+        if ((scan.unpriced || []).length) body.append(mk('p', 'ws-sub ws-note', `${scan.unpriced.length} unpriced token${scan.unpriced.length === 1 ? '' : 's'} not shown: ${scan.unpriced.slice(0, 6).map(t => t.name || t.symbol).join(', ')}.`));
+      } else body.append(emptyState('wallet', 'No holdings yet', 'Scan the wallet first.'));
+    } else if (walletTab === 'activity') {
+      body.append(walletActivityList(scan));
+    } else if (walletTab === 'automation') {
+      body.append(walletAutomationBody(item));
+    } else {
+      body.append(walletNotesBody(item));
+    }
+    card.append(heading, tabs, body);
+    return card;
   }
   const currentScanJob = () => (typeof view !== 'undefined' && view.scanJob) || null;
   async function scanAllFollowed() {
@@ -442,42 +683,49 @@
   function drawWallets(root, s) {
     const followed = wallet()?.followed || [];
     const actions = [];
-    if (followed.length >= 2) actions.push(btn(compareWallets ? 'Hide compare' : 'Compare', { sm: true, variant: 'ghost', icon: 'chart' }, () => { compareWallets = !compareWallets; draw(); }));
+    if (followed.length >= 2) actions.push(btn(compareWallets ? 'Close compare' : 'Compare', { sm: true, variant: 'ghost', icon: 'chart' }, () => { compareWallets = !compareWallets; draw(); }));
     const scanJob = currentScanJob();
     const scanning = scanJob?.running === true;
     if (followed.length) actions.push(btn(scanning ? `Scanning ${scanJob.done}/${scanJob.total}…` : 'Scan all', { sm: true, variant: 'ghost', icon: 'refresh', disabled: scanning }, scanAllFollowed));
-    actions.push(btn('Ask Gigi', { sm: true, variant: 'primary', icon: 'chat' }, () => askGigi('Look at the wallets I follow. Compare their holdings and behavior, tell me what each one seems to be doing, and which tokens are worth researching next.')));
-    head(root, 'Wallets', 'Follow wallets you want to learn from. Gigi scans them read-only, briefs you on the behavior, and answers questions about their tokens.', actions);
-    root.append(followForm());
+    actions.push(btn(walletAddOpen ? 'Close add' : 'Add wallet', { sm: true, variant: walletAddOpen ? 'ghost' : 'primary', icon: 'plus' }, () => { walletAddOpen = !walletAddOpen; draw(); }));
+    actions.push(btn('Ask Gigi', { sm: true, variant: 'ghost', icon: 'chat' }, () => askGigi('Look at the wallets I follow. Compare their holdings and behavior, tell me what each one seems to be doing, and which tokens are worth researching next.')));
+    head(root, 'Wallets', 'Follow wallets you want to learn from. Gigi scans them read-only, briefs you on behavior, and answers questions about their tokens.', actions);
     if (scanning) root.append(scanJobPanel(scanJob));
+    if (walletAddOpen || !followed.length) root.append(followForm());
     if (!followed.length) { root.append(panel('Following', {}, emptyState('wallet', 'No followed wallets yet', 'Paste an address above. Good candidates are wallets whose trades you already respect.'))); return; }
-    if (compareWallets && followed.length >= 2) root.append(comparePanel(followed));
     const selected = followed.find(item => item.id === followSelected) || followed[0];
-    const list = mk('div', 'ws-list ws-followlist');
-    for (const item of followed) {
-      const scan = item.scan || {};
-      const ct = mk('div', 'ws-ctrls');
-      ct.append(
-        ibtn('refresh', 'Scan', run(async () => call2(window.aurora.walletFollowScan(item.id)))),
-        ibtn('research', 'Brief', run(async () => call2(window.aurora.walletFollowBrief(item.id)))),
-        ibtn('chat', 'Ask about this wallet', () => askAboutWallet(item, 'What stands out about this wallet?')),
-        ibtn('delete', 'Stop following', run(async () => { if (followSelected === item.id) followSelected = ''; return call2(window.aurora.walletFollowRemove(item.id)); }))
-      );
-      const row = mk('div', 'ws-item ws-followrow');
-      const main = mk('div', 'ws-followmain');
-      main.append(mk('strong', '', item.label || short(item.address)), mk('small', '', `${short(item.address)} · ${scan.tokenCount || 0} tokens${scan.lastActive ? ` · active ${ageLabel(scan.lastActive)} ago` : ''}`));
-      const meta = mk('div', 'ws-followmeta');
-      const valueRow = mk('div', 'ws-followvalue');
-      if (scan.at) { valueRow.append(mk('strong', '', scan.total >= 1e6 ? `$${compact(scan.total)}` : money(scan.total))); valueRow.append(mk('small', scan.change24h >= 0 ? 'hf-up' : 'hf-down', `${scan.change24h >= 0 ? '+' : ''}${Number(scan.change24h || 0).toFixed(2)}%`)); }
-      else valueRow.append(mk('small', 'ws-sub', item.lastError ? 'scan failed' : 'not scanned'));
-      valueRow.append(mk('span', `hf-badge${item.lastError ? ' live' : scan.at ? ' ok' : ' muted'}`, item.lastError ? 'error' : scan.at ? 'scanned' : 'new'));
-      meta.append(valueRow, ct);
-      row.append(main, meta);
-      row.addEventListener('click', event => { if (event.target.closest('button')) return; followSelected = item.id; draw(); });
-      list.append(row);
+    const layout = mk('div', 'ws-wallets-layout');
+    const sidebar = mk('div', 'ws-wallet-sidebar');
+    const sideHead = mk('div', 'ws-wallet-sidebar-head');
+    sideHead.append(mk('strong', '', `Wallets · ${followed.length}`), mk('span', 'ws-sub', compareWallets ? 'Compare mode' : 'Select a wallet'));
+    const search = mk('input', 'hf-input ws-wallet-search'); search.type = 'search'; search.placeholder = 'Filter wallets'; search.value = walletQuery;
+    const list = mk('div', 'ws-wallet-list');
+    function renderWalletRows() {
+      const q = walletQuery.trim().toLowerCase();
+      const visible = followed.filter(item => !q || `${item.label || ''} ${item.address}`.toLowerCase().includes(q));
+      list.replaceChildren();
+      if (!visible.length) { list.append(mk('p', 'ws-sub', 'No wallets match.')); return; }
+      for (const item of visible) {
+        const scan = item.scan || {};
+        const status = walletStatus(item);
+        const row = mk('button', 'ws-wallet-row' + (item.id === selected.id && !compareWallets ? ' selected' : '')); row.type = 'button';
+        row.onclick = () => { followSelected = item.id; walletTab = 'overview'; compareWallets = false; draw(); };
+        const dot = mk('span', `ws-wallet-dot ${status.cls.trim()}`);
+        const main = mk('span', 'ws-wallet-rowmain');
+        main.append(mk('strong', '', item.label || short(item.address)), mk('small', '', `${short(item.address)} · ${status.label}`));
+        const value = mk('span', 'ws-wallet-value');
+        if (scan.at) value.append(mk('b', '', scan.total >= 1e6 ? `$${compact(scan.total)}` : money(scan.total)), mk('small', (scan.change24h || 0) >= 0 ? 'hf-up' : 'hf-down', `${(scan.change24h || 0) >= 0 ? '+' : ''}${Number(scan.change24h || 0).toFixed(2)}%`));
+        else value.append(mk('small', 'ws-sub', '—'));
+        row.append(dot, main, value); list.append(row);
+      }
     }
-    root.append(panel(`Following · ${followed.length}`, { actions: [btn('Clear selection', { sm: true, variant: 'ghost', disabled: !followSelected }, () => { followSelected = ''; draw(); })] }, list));
-    root.append(followDetail(selected, s));
+    search.oninput = () => { walletQuery = search.value; renderWalletRows(); };
+    sidebar.append(sideHead, search, list);
+    renderWalletRows();
+    layout.append(sidebar);
+    if (compareWallets) layout.append(comparePanel(followed));
+    else layout.append(followDetail(selected, s));
+    root.append(layout);
   }
   // Simple bar chart for `bar` view specs (line/area use drawChart).
   function drawBars(box, points, height = 260) {
@@ -504,7 +752,12 @@
     const body = mk('div', 'ws-view-body');
     if (drawer) card.append(body); else card.append(headr, body);
     if (v.type === 'line' || v.type === 'area' || v.type === 'bar') {
-      if (v.source.mint) { const c = mk('div', 'ws-chart'); body.append(c); const render = points => { if (v.type === 'bar') drawBars(c, points, 260); else drawChart(c, points, 260); }; seriesOf(v.source.mint).then(points => { render(points); if (!points || points.length < 2) body.append(btn('Retry', { sm: true, variant: 'ghost', icon: 'refresh' }, run(async () => { c.replaceChildren(); render(await seriesOf(v.source.mint)); }))); }); }
+      if (v.source.kind === 'portfolio') {
+        const c = mk('div', 'ws-chart'); body.append(c);
+        const range = v.source.range || pfRange;
+        const load = () => call2(window.aurora.walletPortfolioSeries(range)).then(result => { const res = Array.isArray(result) ? { points: result } : (result || {}); if (v.type === 'bar') drawBars(c, res.points || [], 260); else drawChart(c, res.points || [], 260); if (res.holdings && res.covered < res.holdings) body.append(mk('p', 'ws-sub', `Chart covers ${res.covered} of ${res.holdings} priced holdings.`)); }).catch(() => drawChart(c, [], 260));
+        load();
+      } else if (v.source.mint) { const c = mk('div', 'ws-chart'); body.append(c); const render = points => { if (v.type === 'bar') drawBars(c, points, 260); else drawChart(c, points, 260); }; seriesOf(v.source.mint).then(points => { render(points); if (!points || points.length < 2) body.append(btn('Retry', { sm: true, variant: 'ghost', icon: 'refresh' }, run(async () => { c.replaceChildren(); render(await seriesOf(v.source.mint)); }))); }); }
       else body.append(emptyState('chart', 'No data', 'Give this view a token mint.'));
     }
     else if (v.type === 'holders') { body.append(holdersBody(v.source.mint)); }
@@ -550,7 +803,7 @@
   function drawPortfolio(root, s) {
     const holdings = [...(s.holdings || [])]; const markets = s.markets || []; const p = paper();
     const change = Number(s.change24h || 0) * 100;
-    head(root, 'Portfolio', 'Live wallet positions, paper trading and the markets you follow.', [btn('Chart', { sm: true, variant: 'ghost', icon: 'chart' }, () => askGigi('Show my portfolio on a chart and flag anything I should look at.'))]);
+    head(root, 'Portfolio', 'Live wallet positions, paper trading and the markets you follow.', [btn('Chart', { sm: true, variant: 'ghost', icon: 'chart' }, () => { if (!(s.holdings || []).length) return window.toast('Connect a wallet or add an address first.'); openViewer({ type: 'line', title: 'Portfolio performance', subtitle: `${pfRange} · ${s.holdings.length} priced holdings`, layout: 'full', source: { kind: 'portfolio', range: pfRange } }); })]);
     const stats = mk('div', 'ws-statbar');
     stats.append(metric('Wallet value', money(s.total)), metric('24h change', s.change24h != null ? `${change >= 0 ? '+' : ''}${change.toFixed(2)}%` : '—', change >= 0 ? 'hf-up' : 'hf-down'), metric('Holdings', String(holdings.length)), metric('Paper equity', money(p?.equity)), metric('Paper cash', money(p?.cash)));
     root.append(stats);
@@ -584,7 +837,19 @@
     }
 
     if (p) { const list = mk('div', 'ws-list'); for (const pos of p.positions) { const badge = mk('span', `hf-badge${(pos.roe || 0) >= 0 ? ' ok' : ' live'}`, `${(pos.roe || 0) >= 0 ? '+' : ''}${Number(pos.roe || 0).toFixed(2)}%`); list.append(listItem(pos.symbol, `${amount(pos.amount)} @ ${money(pos.avgPrice)} · ${(pos.unrealizedPnl || 0) >= 0 ? '+' : ''}${money(pos.unrealizedPnl)}`, money(pos.value), undefined, undefined, badge)); } const actions = mk('div', 'ws-ctrls'); actions.append(btn('Exit & pause', { sm: true }, run(async () => call2(window.aurora.walletSessionPause({ exit: true })))), btn('Reset', { sm: true, variant: 'ghost' }, run(async () => call2(window.aurora.walletPaperReset({}))))); root.append(panel(`Paper · cash ${money(p.cash)} · equity ${money(p.equity)} · P/L ${(p.totalPnl || 0) >= 0 ? '+' : ''}${money(p.totalPnl)}`, { actions }, p.positions.length ? list : emptyState('trade', 'No paper positions', 'Buy in Trade to open one.'))); }
-    if ((s.watchlist || []).length) { const list = mk('div', 'ws-list'); for (const it of s.watchlist) list.append(listItem(it.symbol, 'watched', money(it.price), it.change24h)); root.append(panel('Watchlist', {}, list)); }
+    if ((s.watchlist || []).length) {
+      const list = mk('div', 'ws-list');
+      for (const it of s.watchlist) {
+        const ct = mk('div', 'ws-ctrls');
+        ct.append(
+          ibtn('alert', 'Set alert', () => { watchMint = it.mint; section = 'alerts'; savePrefs(); draw(); }),
+          ibtn('trade', 'Trade', () => { section = 'trade'; selectToken(it.mint); }),
+          ibtn('delete', 'Remove', run(async () => call2(window.aurora.walletWatchlistRemove(it.mint))))
+        );
+        list.append(listItem(it.symbol, 'watched', money(it.price), it.change24h, ct));
+      }
+      root.append(panel(`Watchlist · ${s.watchlist.length}`, {}, list));
+    }
     if (markets.length) root.append(panel('Markets', {}, marketsTable(markets)));
   }
 
@@ -659,8 +924,10 @@
     const preview = await call2(window.aurora.walletPumpPreview({ mint, side, usd, amountUi, slippagePct: pumpSlippage, priorityFeeSol: pumpPriority }));
     const summary = preview.summary || {};
     const sim = preview.simulation?.ok ? 'simulation ok' : `simulation failed${preview.simulation?.error ? `: ${preview.simulation.error}` : ''}`;
+    const readiness = preview.readiness;
+    const walletLine = readiness ? `${readiness.signerType === 'vault' ? 'Bot wallet' : 'Connected wallet'} ${amount(readiness.balanceSol)} SOL · RPC ${readiness.rpcOk ? 'ok' : 'unreachable'}` : 'Wallet not checked';
     const detail = side === 'buy' ? `Buy ≈${summary.estimate ? amount(summary.estimate) : '…'} ${(symbol || short(mint)).trim()} for ${money(usd)}` : `Sell ${amount(amountUi)} ${(symbol || short(mint)).trim()}`;
-    if (!window.confirm(`${detail}\nPumpPortal ${summary.pool} · fee ${summary.feePct}% · slippage ${summary.slippagePct}% · priority ${summary.priorityFeeSol} SOL · ${sim}\n\nSign this live pump trade?`)) return null;
+    if (!window.confirm(`${detail}\n${walletLine}\nPumpPortal ${summary.pool} · fee ${summary.feePct}% · slippage ${summary.slippagePct}% · priority ${summary.priorityFeeSol} SOL · ${sim}\n\nSign this live pump trade?`)) return null;
     const result = await call2(window.aurora.walletPumpExecute({ mint, side, usd, amountUi, slippagePct: pumpSlippage, priorityFeeSol: pumpPriority }));
     window.toast(`Live ${side} ${result.status}${result.signature ? ` · ${result.signature.slice(0, 8)}…` : ''}`);
     return call2(window.aurora.load());
@@ -846,7 +1113,7 @@
     const nameRow = mk('div', 'ws-trade-name'); nameRow.append(mk('h1', 'ws-h1', pair.name || symbolName), mk('span', 'ws-tick', symbolName));
     const priceRow = mk('div', 'ws-trade-price'); priceRow.append(mk('b', '', money(pair.priceUsd))); if (pair.change24h != null) priceRow.append(mk('span', `ws-change ${change >= 0 ? 'hf-up' : 'hf-down'}`, `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`)); priceRow.append(mk('span', 'ws-mint', short(chartMint)));
     heading.append(nameRow, priceRow);
-    const ha = mk('div', 'ws-head-actions'); ha.append(...actions);
+    const ha = mk('div', 'ws-head-actions'); const tradeGuide = btn(tutorialLabel(), { sm: true, variant: 'ghost' }, () => openTutorial()); tradeGuide.classList.add('ws-tutorial-btn'); ha.append(tradeGuide, ...actions);
     header.append(heading, ha); root.append(header);
     const meta = mk('div', 'ws-trademeta');
     meta.append(mk('span', '', `Liquidity ${pair.liquidityUsd ? '$' + compact(pair.liquidityUsd) : '—'}`), mk('span', '', `Vol 24h ${pair.volume24h ? '$' + compact(pair.volume24h) : '—'}`), mk('span', '', `Mkt cap ${pair.marketCap ? '$' + compact(pair.marketCap) : '—'}`));
@@ -1144,7 +1411,7 @@
     settings.append(paper, budget, maxBuys, interval, toggle);
     wrap.append(main, settings);
     if (pumpAutoState.error && pumpAutoState.enabled) wrap.append(mk('p', 'ws-sub ws-note hf-down', pumpAutoState.error));
-    wrap.append(mk('p', 'ws-sub ws-note', 'Paper only. Uses your selected model and may cost credits. Runs while Aurora is open. Live auto trading is intentionally disabled.'));
+    wrap.append(mk('p', 'ws-sub ws-note', 'Pump auto is paper only. Uses your selected model and may cost credits. Runs while Aurora is open. Live strategy auto is controlled separately in Strategies.'));
     return wrap;
   }
   function drawPumpfun(root, s) {
@@ -1484,12 +1751,19 @@
   function personRoleBadge(kind) {
     return mk('span', `hf-badge${kind === 'dev' ? ' ok' : kind === 'kol' || kind === 'influencer' ? '' : ' muted'}`, personRole(kind));
   }
+  function personSourceLabel(source) {
+    return source === 'axiom' ? 'Axiom' : source === 'pumpfun-padre' ? 'Pump / Padre' : source === 'kolscan' ? 'Kolscan' : source ? source : 'Manual';
+  }
   function drawPeople(root, s) {
     const tracked = wallet()?.people || [];
+    const active = tracked.filter(person => person.watchActivity !== false).length;
     const actions = [];
     if (peopleScanState?.running) actions.push(mk('span', 'ws-sub', `Scanning ${peopleScanState.done}/${peopleScanState.total}…`));
     else if (tracked.length) actions.push(btn('Scan all', { sm: true, variant: 'ghost', icon: 'refresh' }, run(async () => { const data = await call2(window.aurora.walletPeopleScanAll()); peopleScanState = data.peopleScanJob || null; window.toast('Scanning tracked people…'); return data; })));
-    head(root, 'People', 'Devs, KOLs, influencers and traders you track. Scans are read-only.', actions);
+    if (tracked.length) actions.push(mk('span', 'hf-badge ok', `${active} on radar`));
+    actions.push(btn('Starter pack', { sm: true, variant: 'ghost', icon: 'plus', title: 'Restore the top-trader starter pack' }, run(async () => { const data = await call2(window.aurora.walletRadarStarter({ force: true })); window.toast(data.radarStarter?.added ? `${data.radarStarter.added} starter wallets added.` : 'Starter pack is already complete.'); return data; })));
+    actions.push(btn(peopleAddOpen ? 'Close add' : 'Add person', { sm: true, variant: peopleAddOpen ? 'ghost' : 'primary', icon: 'plus' }, () => { peopleAddOpen = !peopleAddOpen; draw(); }));
+    head(root, 'People', 'Devs, KOLs, influencers and traders you track. Radar watches them read-only.', actions);
     const address = field('Wallet address', 'text'); address.querySelector('input').placeholder = 'Paste a Solana wallet'; address.querySelector('input').spellcheck = false;
     const label = field('Label', 'text'); label.querySelector('input').placeholder = 'e.g. Cobie, launch dev, smart trader';
     const role = field('Role', 'select', ['KOL', 'Influencer', 'Trader', 'Smart', 'Dev', 'Other']);
@@ -1507,36 +1781,78 @@
       window.toast(`${inputOf(label) || short(value)} added and scanned.`);
       return data;
     })));
-    root.append(panel('Track a wallet', {}, form));
+    if (peopleAddOpen || !tracked.length) root.append(panel('Track a wallet', {}, form));
+    const toolbar = mk('div', 'ws-people-toolbar');
+    const search = mk('input', 'hf-input ws-people-search'); search.type = 'search'; search.placeholder = 'Search label, address, tag or note'; search.value = peopleQuery;
+    const source = mk('select', 'hf-input ws-people-source');
+    for (const [value, text] of [['all', 'All sources'], ['axiom', 'Axiom'], ['pumpfun-padre', 'Pump / Padre'], ['kolscan', 'Kolscan'], ['manual', 'Manual']]) { const o = mk('option', '', text); o.value = value; source.append(o); }
+    source.value = peopleSource;
+    const status = mk('select', 'hf-input ws-people-status');
+    for (const [value, text] of [['all', 'All status'], ['active', 'Radar active'], ['paused', 'Radar paused']]) { const o = mk('option', '', text); o.value = value; status.append(o); }
+    status.value = peopleStatus;
+    const sort = mk('select', 'hf-input ws-people-sort');
+    for (const [value, text] of [['order', 'Starter order'], ['lastMove', 'Last move'], ['name', 'Name'], ['value', 'Value']]) { const o = mk('option', '', text); o.value = value; sort.append(o); }
+    sort.value = peopleSort;
+    toolbar.append(search, source, status, sort);
     const filters = mk('div', 'ws-seg ws-people-filters');
     for (const [id, text] of PEOPLE_ROLES) {
-      const b = mk('button', peopleFilter === id ? 'active' : '', `${text}${id === 'all' ? ` ${tracked.length}` : ''}`);
+      const count = id === 'all' ? tracked.length : tracked.filter(person => person.kind === id).length;
+      const b = mk('button', peopleFilter === id ? 'active' : '', `${text}${count ? ` ${count}` : ''}`);
       b.type = 'button'; b.onclick = () => { peopleFilter = id; draw(); }; filters.append(b);
     }
+    const count = mk('span', 'ws-sub ws-people-count');
     const list = mk('div', 'ws-list ws-people-list');
-    const visible = tracked.filter(person => peopleFilter === 'all' || person.kind === peopleFilter);
-    if (!visible.length) list.append(emptyState('holders', tracked.length ? 'No people in this filter' : 'No people tracked yet', tracked.length ? 'Choose another role.' : 'Add a dev, KOL, influencer or trader above.'));
-    for (const person of visible) {
-      const scan = person.scan;
-      const stats = person.stats || {};
-      const sub = `${personRole(person.kind)} · ${short(person.address)} · ${scan ? `${scan.holdings?.length || 0} holdings · scanned ${ageLabel(person.scanAt || scan.at)}` : 'not scanned yet'}${stats.launches ? ` · ${stats.launches} launch${stats.launches === 1 ? '' : 'es'}` : ''}${person.note ? ` · ${person.note}` : ''}`;
-      const ct = mk('div', 'ws-ctrls');
-      ct.append(
-        ibtn('refresh', 'Scan wallet', run(async () => call2(window.aurora.walletPeopleScan(person.id)))),
-        ibtn('external', 'Open on Solscan', () => call2(window.aurora.openLink(`https://solscan.io/account/${person.address}`)).catch(error => window.toast(error.message))),
-        ibtn('research', 'Open token intel', () => { section = 'research'; intelMint = ''; intelData = null; const first = scan?.holdings?.[0]?.mint; if (first) loadIntel(first); else window.toast('Scan this person to get a token to research.'); }),
-        ibtn('delete', 'Remove', run(async () => call2(window.aurora.walletPeopleRemove(person.id))))
-      );
-      const item = listItem(person.label, sub, scan ? money(scan.total) : '—', undefined, ct, personRoleBadge(person.kind));
-      if (scan?.holdings?.length) {
-        const holdings = mk('div', 'ws-people-holdings');
-        for (const holding of scan.holdings.slice(0, 5)) holdings.append(mk('span', 'ws-social', `${holding.symbol} ${money(holding.value)}`));
-        item.querySelector('div').append(holdings);
+    function renderPeopleRows() {
+      const q = peopleQuery.trim().toLowerCase();
+      let visible = tracked.filter(person => {
+        if (peopleFilter !== 'all' && person.kind !== peopleFilter) return false;
+        if (peopleSource === 'manual' && person.source) return false;
+        if (peopleSource !== 'all' && peopleSource !== 'manual' && person.source !== peopleSource) return false;
+        if (peopleStatus === 'active' && person.watchActivity === false) return false;
+        if (peopleStatus === 'paused' && person.watchActivity !== false) return false;
+        if (q && !`${person.label} ${person.address} ${(person.tags || []).join(' ')} ${person.note || ''} ${personSourceLabel(person.source)}`.toLowerCase().includes(q)) return false;
+        return true;
+      });
+      if (peopleSort === 'name') visible = [...visible].sort((a, b) => a.label.localeCompare(b.label));
+      else if (peopleSort === 'value') visible = [...visible].sort((a, b) => (b.scan?.total || 0) - (a.scan?.total || 0));
+      else if (peopleSort === 'lastMove') visible = [...visible].sort((a, b) => (b.lastActivityAt || 0) - (a.lastActivityAt || 0));
+      count.textContent = `Showing ${visible.length} of ${tracked.length} · ${active} active`;
+      list.replaceChildren();
+      if (!visible.length) { list.append(emptyState('holders', tracked.length ? 'No people match these filters' : 'No people tracked yet', tracked.length ? 'Try another role, source or status.' : 'Add a dev, KOL, influencer or trader above.')); return; }
+      for (const person of visible) {
+        const scan = person.scan;
+        const stats = person.stats || {};
+        const activity = person.watchActivity === false ? 'radar paused' : person.lastActivityAt ? `last move ${ageLabel(person.lastActivityAt)}` : 'on radar';
+        const sourceLabel = personSourceLabel(person.source);
+        const rank = person.sourceRank ? ` #${person.sourceRank}` : '';
+        const metric = person.pnlUsd ? `$${compact(person.pnlUsd)} PnL` : person.winRate ? `${Number(person.winRate).toFixed(1)}% win` : '';
+        const scanText = scan ? `${scan.pricedCount || scan.holdings?.length || 0} priced positions · scanned ${ageLabel(person.scanAt || scan.at)}` : 'not scanned';
+        const sub = [`${personRole(person.kind)} · ${sourceLabel}${rank}`, metric, scanText, activity, person.starter ? '' : person.note].filter(Boolean).join(' · ');
+        const ct = mk('div', 'ws-ctrls');
+        ct.append(
+          ibtn(person.watchActivity === false ? 'pause' : 'live', person.watchActivity === false ? 'Resume radar' : 'Pause radar', run(async () => call2(window.aurora.walletPeopleWatch({ id: person.id, enabled: person.watchActivity === false })))),
+          ibtn('refresh', 'Scan wallet', run(async () => call2(window.aurora.walletPeopleScan(person.id)))),
+          ibtn('external', 'Open on Solscan', () => call2(window.aurora.openLink(`https://solscan.io/account/${person.address}`)).catch(error => window.toast(error.message))),
+          ibtn('research', 'Open token intel', () => { section = 'research'; intelMint = ''; intelData = null; const first = scan?.holdings?.[0]?.mint; if (first) loadIntel(first); else window.toast('Scan this person to get a token to research.'); }),
+          ibtn('delete', 'Remove', run(async () => call2(window.aurora.walletPeopleRemove(person.id))))
+        );
+        const item = listItem(person.label, sub, scan ? money(scan.total) : '—', undefined, ct, personRoleBadge(person.kind));
+        item.title = person.note || '';
+        if (scan?.holdings?.length) {
+          const holdings = mk('div', 'ws-people-holdings');
+          for (const holding of scan.holdings.slice(0, 4)) holdings.append(mk('span', 'ws-social', `${holding.symbol} ${money(holding.value)}`));
+          item.querySelector('div').append(holdings);
+        }
+        if (person.lastError) item.querySelector('div').append(mk('small', 'ws-note hf-down', person.lastError));
+        list.append(item);
       }
-      if (person.lastError) item.querySelector('div').append(mk('small', 'ws-note hf-down', person.lastError));
-      list.append(item);
     }
-    root.append(panel('Tracked people', {}, filters, list));
+    search.oninput = () => { peopleQuery = search.value; renderPeopleRows(); };
+    source.onchange = () => { peopleSource = source.value; renderPeopleRows(); };
+    status.onchange = () => { peopleStatus = status.value; renderPeopleRows(); };
+    sort.onchange = () => { peopleSort = sort.value; renderPeopleRows(); };
+    renderPeopleRows();
+    root.append(panel('People on radar', {}, toolbar, filters, count, list));
     root.append(panel('', {}, renderWalletGraph()));
   }
   async function loadIntel(mint) {
@@ -1693,57 +2009,442 @@
     if (n.url) call2(window.aurora.openLink(n.url)).catch(error => window.toast(error.message));
     else if (n.wallet) window.toast('That wallet is no longer followed.');
   }
-  function drawWatch(root, s) {
+  function alertKind(n) {
+    return n.kind === 'person' ? { label: 'Radar', cls: ' ok', icon: 'live' } : n.kind === 'wallet' ? { label: 'Wallet', cls: '', icon: 'wallet' } : n.kind === 'signal' ? { label: 'Signal', cls: '', icon: 'strategies' } : n.kind === 'alert' ? { label: 'Price', cls: ' ok', icon: 'alert' } : n.kind === 'fill' ? { label: 'Fill', cls: ' muted', icon: 'trade' } : { label: 'System', cls: ' muted', icon: 'chat' };
+  }
+  function alertFills(s) {
+    const rows = [];
+    for (const order of (paper()?.orders || []).slice(-30)) rows.push({
+      id: `paper-${order.id || order.at}-${order.mint}`, at: Number(order.at) || Date.now(), kind: 'fill', read: true,
+      title: `Paper ${order.side} ${order.symbol || short(order.mint)}`,
+      body: `${money(order.valueUsd)}${order.price ? ` at ${money(order.price)}` : ''}`
+    });
+    for (const execution of (wallet()?.executions || []).slice(-20)) rows.push({
+      id: `live-${execution.id || execution.at}`, at: Number(execution.at) || Date.now(), kind: 'fill', read: true,
+      title: `Live ${execution.side} ${execution.symbol || short(execution.mint)}`,
+      body: `${execution.status || 'submitted'}${execution.valueUsd ? ` · ${money(execution.valueUsd)}` : ''}${execution.signature ? ` · ${execution.signature.slice(0, 8)}…` : ''}`,
+      url: execution.signature ? `https://solscan.io/tx/${encodeURIComponent(execution.signature)}` : ''
+    });
+    return rows;
+  }
+  function alertCard(n) {
+    const kind = alertKind(n);
+    const card = mk('div', 'ws-alert-card' + (n.read ? '' : ' unread'));
+    const icon = mk('span', 'ws-alert-icon'); icon.append(ic(kind.icon, 15));
+    const body = mk('div', 'ws-alert-body');
+    const top = mk('div', 'ws-alert-top');
+    top.append(mk('strong', '', n.title), mk('span', `hf-badge${kind.cls}`, kind.label), mk('span', 'ws-alert-time', new Date(n.at).toLocaleTimeString()));
+    body.append(top, mk('p', '', n.body || ''));
+    if (n.url) {
+      const open = btn('Open', { sm: true, variant: 'ghost', icon: 'external' }, () => call2(window.aurora.openLink(n.url)).catch(error => window.toast(error.message)));
+      open.setAttribute('aria-label', 'Open transaction');
+      body.append(open);
+    }
+    card.append(icon, body);
+    if (n.kind === 'wallet' && n.wallet) { card.style.cursor = 'pointer'; card.onclick = event => { if (event.target.closest('button')) return; openNotification(n); }; }
+    return card;
+  }
+  function drawAlerts(root, s) {
     const marks = (typeof view !== 'undefined' && view.notifications) || [];
-    head(root, 'Watch', 'Tokens you follow, price alerts, and your notification inbox.');
-    const watch = s.watchlist || [];
-    const table = mk('table', 'hf-table ws-watch-table');
-    const thead = mk('thead'); const htr = mk('tr'); for (const [label, n] of [['Token', false], ['Price', true], ['24h', true], ['Trend', true], ['', false]]) htr.append(mk('th', n ? 'num' : '', label)); thead.append(htr); table.append(thead);
-    const tb = mk('tbody');
-    if (!watch.length) { const tr = mk('tr'); const td = mk('td'); td.colSpan = 5; td.append(emptyState('watch', 'Nothing on your watchlist yet', 'Tap the star on any token in Discover or Trade.')); tr.append(td); tb.append(tr); }
-    for (const m of watch) { const tr = mk('tr'); tr.dataset.mint = m.mint; const ch = m.change24h || 0; const xinfo = xstockNames.get(m.mint); const td0 = mk('td'); td0.append(mk('span', 'ws-sym', xinfo ? xinfo.symbol : (m.symbol || short(m.mint)))); if (xinfo) td0.append(mk('span', 'hf-badge', 'xStock')); const act = mk('td', 'num'); act.append(ibtn('alert', 'Set alert', () => { watchMint = m.mint; draw(); }), ibtn('trade', 'Trade', () => { section = 'trade'; selectToken(m.mint); }), ibtn('delete', 'Remove', run(async () => call2(window.aurora.walletWatchlistRemove(m.mint))))); tr.append(td0, mk('td', 'num', money(m.price)), mk('td', `num ${ch >= 0 ? 'hf-up' : 'hf-down'}`, `${ch >= 0 ? '+' : ''}${ch.toFixed(2)}%`), mk('td', 'num ws-spark'), act); tb.append(tr); }
-    table.append(tb); root.append(panel('Watchlist', {}, table));
-    for (const m of watch.slice(0, 20)) seriesOf(m.mint).then(points => { const row = tb.querySelector(`tr[data-mint="${CSS.escape(m.mint)}"]`); if (row && points && points.length >= 2) row.querySelector('.ws-spark').append(sparkline(points)); });
+    const fills = alertFills(s);
+    const events = [...marks, ...fills].sort((a, b) => b.at - a.at);
+    const alerts = s.alerts || [];
+    const unread = marks.filter(item => !item.read).length;
+    head(root, 'Alerts', 'Price alerts, signals and Radar events in one clean feed.', [
+      btn('Mark all read', { sm: true, variant: 'ghost', disabled: !unread }, run(async () => call2(window.aurora.notificationsRead()))),
+      btn('Clear', { sm: true, variant: 'ghost', disabled: !marks.length }, run(async () => call2(window.aurora.notificationsClear())))
+    ]);
+    const stats = mk('div', 'ws-statbar');
+    stats.append(metric('Unread', String(unread)), metric('Events', String(events.length)), metric('Price alerts', String(alerts.length)), metric('Last event', events[0] ? ageLabel(events[0].at) : '—'));
+    const filters = mk('div', 'ws-seg ws-alert-filters');
+    const kinds = [['all', 'All', events.length], ['alert', 'Price', events.filter(item => item.kind === 'alert').length], ['signal', 'Signals', events.filter(item => item.kind === 'signal').length], ['person', 'Radar', events.filter(item => item.kind === 'person').length], ['wallet', 'Wallets', events.filter(item => item.kind === 'wallet').length], ['fill', 'Fills', fills.length], ['info', 'System', events.filter(item => item.kind === 'info').length]];
+    for (const [id, label, count] of kinds) {
+      const b = mk('button', alertFilter === id ? 'active' : '', `${label}${count ? ` ${count}` : ''}`); b.type = 'button';
+      b.onclick = () => { alertFilter = id; draw(); }; filters.append(b);
+    }
+    const visible = alertFilter === 'all' ? events : events.filter(item => item.kind === alertFilter);
+    const feed = mk('div', 'ws-alert-feed');
+    if (!visible.length) feed.append(emptyState('alert', events.length ? 'Nothing in this filter' : 'No alerts yet', events.length ? 'Choose another filter.' : 'Price alerts, signals, Radar moves and wallet activity land here.'));
+    for (const item of visible) feed.append(alertCard(item));
+    root.append(panel('Activity', {}, filters, feed));
     const target = watchMint || chartMint || (s.markets || [])[0]?.mint || '';
     root.append(panel('Price alerts', {}, alertForm(target, sym(target, s), s), alertsBody(s)));
-    const notes = mk('div', 'ws-list');
-    if (!marks.length) notes.append(emptyState('alert', 'No notifications yet', 'Price alerts, signals and followed-wallet moves land here.'));
-    for (const n of [...marks].reverse()) {
-      const badge = mk('span', `hf-badge${n.kind === 'alert' ? ' ok' : n.kind === 'signal' || n.kind === 'wallet' ? '' : ' muted'}`, n.kind);
-      const ct = mk('div', 'ws-ctrls');
-      if (n.url) ct.append(ibtn('external', 'Open transaction', () => call2(window.aurora.openLink(n.url)).catch(error => window.toast(error.message))));
-      const row = listItem(n.title, `${n.body}${n.read ? '' : ' · new'} · ${new Date(n.at).toLocaleTimeString()}`, undefined, undefined, ct, badge);
-      if (n.kind === 'wallet' && n.wallet) { row.style.cursor = 'pointer'; row.onclick = event => { if (event.target.closest('button')) return; openNotification(n); }; }
-      notes.append(row);
-    }
-    root.append(panel('Notifications', { actions: [btn('Mark all read', { sm: true, variant: 'ghost' }, run(async () => call2(window.aurora.notificationsRead()))), btn('Clear', { sm: true, variant: 'ghost' }, run(async () => call2(window.aurora.notificationsClear())))] }, notes));
   }
-
+  const STRATEGY_TEMPLATES = [
+    {
+      id: 'dip', kicker: 'MEAN REVERSION', title: 'Buy the dip',
+      desc: 'Wait for a sharp 24h drawdown, then enter only when the short window turns up.',
+      conditions: [{ metric: 'change24h', op: 'below', value: -15, windowMinutes: 0 }, { metric: 'change', op: 'above', value: 0, windowMinutes: 60 }],
+      logic: 'and', sizingUsd: 25, cooldownSec: 3600, takeProfit: 30, stopLoss: 12
+    },
+    {
+      id: 'breakout', kicker: 'MOMENTUM', title: 'Breakout',
+      desc: 'Enter when the last hour accelerates while the token is already positive on 24h.',
+      conditions: [{ metric: 'change', op: 'above', value: 8, windowMinutes: 60 }, { metric: 'change24h', op: 'above', value: 5, windowMinutes: 0 }],
+      logic: 'and', sizingUsd: 25, cooldownSec: 1800, takeProfit: 40, stopLoss: 15
+    },
+    {
+      id: 'trend', kicker: 'TREND', title: 'Trend follow',
+      desc: 'Join strength only when both the day and the short window agree.',
+      conditions: [{ metric: 'change24h', op: 'above', value: 10, windowMinutes: 0 }, { metric: 'change', op: 'above', value: 2, windowMinutes: 60 }],
+      logic: 'and', sizingUsd: 25, cooldownSec: 3600, takeProfit: 35, stopLoss: 12
+    },
+    {
+      id: 'panic', kicker: 'CAPITULATION', title: 'Panic reclaim',
+      desc: 'Wait for a violent 24h flush, then buy only after the short window turns positive.',
+      conditions: [{ metric: 'change24h', op: 'below', value: -25, windowMinutes: 0 }, { metric: 'change', op: 'above', value: 3, windowMinutes: 60 }],
+      logic: 'and', sizingUsd: 15, cooldownSec: 14400, takeProfit: 35, stopLoss: 15
+    },
+    {
+      id: 'pullback', kicker: 'PULLBACK', title: 'Strength pullback',
+      desc: 'Buy a short-term dip while the token is still strongly positive on the day.',
+      conditions: [{ metric: 'change24h', op: 'above', value: 15, windowMinutes: 0 }, { metric: 'change', op: 'below', value: -4, windowMinutes: 60 }],
+      logic: 'and', sizingUsd: 25, cooldownSec: 3600, takeProfit: 25, stopLoss: 10
+    },
+    {
+      id: 'reclaim', kicker: 'RECLAIM', title: 'First green hour',
+      desc: 'After a weak day, enter when the last hour crosses back above flat.',
+      conditions: [{ metric: 'change24h', op: 'below', value: -10, windowMinutes: 0 }, { metric: 'change', op: 'crossAbove', value: 0, windowMinutes: 60 }],
+      logic: 'and', sizingUsd: 20, cooldownSec: 7200, takeProfit: 30, stopLoss: 12
+    },
+    {
+      id: 'ignition', kicker: 'IGNITION', title: 'Momentum ignition',
+      desc: 'A faster, higher-conviction entry when both the hour and the day accelerate.',
+      conditions: [{ metric: 'change', op: 'above', value: 12, windowMinutes: 60 }, { metric: 'change24h', op: 'above', value: 10, windowMinutes: 0 }],
+      logic: 'and', sizingUsd: 20, cooldownSec: 1800, takeProfit: 50, stopLoss: 18
+    },
+    {
+      id: 'custom', kicker: 'YOUR RULES', title: 'Start from scratch',
+      desc: 'Begin with one simple condition and build the rule yourself.',
+      conditions: [{ metric: 'change24h', op: 'below', value: -10, windowMinutes: 0 }],
+      logic: 'and', sizingUsd: 25, cooldownSec: 3600, takeProfit: 25, stopLoss: 10
+    }
+  ];
+  const STRATEGY_PROFILES = [
+    { id: 'conservative', title: 'Conservative', desc: 'Smaller entries, slower cadence, tighter stop.', sizingUsd: 10, cooldownSec: 14400, takeProfit: 20, stopLoss: 8 },
+    { id: 'balanced', title: 'Balanced', desc: 'A measured default for most paper tests.', sizingUsd: 25, cooldownSec: 3600, takeProfit: 30, stopLoss: 12 },
+    { id: 'aggressive', title: 'Aggressive', desc: 'Larger entries and wider targets. More variance.', sizingUsd: 50, cooldownSec: 900, takeProfit: 50, stopLoss: 20 }
+  ];
+  const STRATEGY_METRICS = [['change24h', '24h change'], ['change', 'Window change'], ['price', 'Price']];
+  const STRATEGY_OPS = [['above', 'is above'], ['below', 'is below'], ['crossAbove', 'crosses above'], ['crossBelow', 'crosses below']];
+  function strategyMetricLabel(metric) { return (STRATEGY_METRICS.find(item => item[0] === metric) || ['', 'Metric'])[1]; }
+  function strategyOpLabel(op) { return (STRATEGY_OPS.find(item => item[0] === op) || ['', 'condition'])[1]; }
+  function strategyWindowLabel(minutes) { const n = Number(minutes) || 0; return n >= 1440 ? `${Math.round(n / 1440)}d` : n >= 60 ? `${Math.round(n / 60)}h` : n > 0 ? `${n}m` : 'window'; }
+  function strategyConditionText(condition, windowMinutes = 60) {
+    const value = condition.metric === 'price' ? money(condition.value) : `${Number(condition.value || 0).toFixed(condition.metric === 'price' ? 0 : 1)}%`;
+    return `${condition.metric === 'change' ? `${strategyWindowLabel(windowMinutes)} change` : strategyMetricLabel(condition.metric)} ${strategyOpLabel(condition.op)} ${value}`;
+  }
+  function strategySummary(conditions, logic = 'and', windowMinutes = 60) {
+    return (conditions || []).map(condition => strategyConditionText(condition, windowMinutes)).join(logic === 'or' ? ' OR ' : ' AND ') || 'No conditions yet.';
+  }
+  function strategyCooldown(seconds) { const n = Number(seconds) || 0; return n >= 86400 ? `${Math.round(n / 86400)}d` : n >= 3600 ? `${Math.round(n / 3600)}h` : `${Math.max(1, Math.round(n / 60))}m`; }
+  function strategyProfileFor(draft) {
+    if (!draft) return 'custom';
+    const match = STRATEGY_PROFILES.find(profile => Number(draft.sizingUsd) === profile.sizingUsd && Number(draft.cooldownSec) === profile.cooldownSec && Number(draft.takeProfit) === profile.takeProfit && Number(draft.stopLoss) === profile.stopLoss);
+    return match ? match.id : 'custom';
+  }
+  function startStrategyBuilder(templateId = 'custom', existing = null) {
+    const template = STRATEGY_TEMPLATES.find(item => item.id === templateId) || STRATEGY_TEMPLATES[0];
+    strategyEditingId = existing?.id || '';
+    strategyDraft = existing ? {
+      name: existing.name || '', mint: existing.mint || '', symbol: existing.symbol || '',
+      conditions: (existing.conditions || []).map(condition => ({ ...condition })), logic: existing.logic === 'or' ? 'or' : 'and',
+      sizingUsd: Number(existing.sizingUsd) || 25, cooldownSec: Number(existing.cooldownSec) || 3600,
+      windowMinutes: Number(existing.windowMinutes) || (existing.conditions || []).find(condition => condition.metric === 'change')?.windowMinutes || 60,
+      takeProfit: Number(existing.exits?.takeProfit) || 0, stopLoss: Number(existing.exits?.stopLoss) || 0,
+      execution: existing.execution === 'live' ? 'live' : 'paper'
+    } : {
+      name: '', mint: chartMint || '', symbol: chartMint ? sym(chartMint, state()) : '',
+      conditions: template.conditions.map(condition => ({ ...condition })), logic: template.logic,
+      sizingUsd: template.sizingUsd, cooldownSec: template.cooldownSec,
+      windowMinutes: template.conditions.find(condition => condition.metric === 'change')?.windowMinutes || 60,
+      takeProfit: template.takeProfit, stopLoss: template.stopLoss, execution: 'paper'
+    };
+    if (!strategyDraft.conditions.length) strategyDraft.conditions = [{ metric: 'change24h', op: 'below', value: -10, windowMinutes: 0 }];
+    strategyTemplate = existing ? 'custom' : templateId;
+    strategyStep = 0; strategyBuilderOpen = true; strategyBacktest = null; strategyBacktestError = ''; strategyBacktestLoading = false; strategyBacktestRange = '7D'; strategyProfile = existing ? 'custom' : strategyProfileFor(strategyDraft); draw();
+  }
+  function closeStrategyBuilder() { strategyBuilderOpen = false; strategyDraft = null; strategyEditingId = ''; strategyStep = 0; strategyBacktest = null; strategyBacktestError = ''; strategyBacktestLoading = false; draw(); }
+  function applyStrategyTemplate(id) {
+    const template = STRATEGY_TEMPLATES.find(item => item.id === id); if (!template || !strategyDraft) return;
+    strategyTemplate = id;
+    strategyDraft.conditions = template.conditions.map(condition => ({ ...condition }));
+    strategyDraft.logic = template.logic;
+    strategyDraft.windowMinutes = template.conditions.find(condition => condition.metric === 'change')?.windowMinutes || 60;
+    strategyDraft.sizingUsd = template.sizingUsd;
+    strategyDraft.cooldownSec = template.cooldownSec;
+    strategyDraft.takeProfit = template.takeProfit;
+    strategyDraft.stopLoss = template.stopLoss;
+    strategyProfile = strategyProfileFor(strategyDraft);
+    strategyBacktest = null; strategyBacktestError = '';
+    draw();
+  }
+  async function saveStrategyDraft(status) {
+    const draft = strategyDraft; if (!draft) return null;
+    const conditions = (draft.conditions || []).filter(condition => STRATEGY_METRICS.some(item => item[0] === condition.metric) && STRATEGY_OPS.some(item => item[0] === condition.op) && Number.isFinite(Number(condition.value)));
+    if (!draft.mint || draft.mint.trim().length < 32) throw Error('Choose a valid token mint first.');
+    if (!conditions.length) throw Error('Add at least one trigger.');
+    const symbol = (draft.symbol || sym(draft.mint, state()) || '').slice(0, 24);
+    const name = (draft.name || `${symbol || 'Token'} ${strategyTemplate === 'custom' ? 'strategy' : (STRATEGY_TEMPLATES.find(item => item.id === strategyTemplate)?.title || 'strategy')}`).slice(0, 60);
+    const data = await call2(window.aurora.walletStrategySave({
+      ...(strategyEditingId ? { id: strategyEditingId } : {}),
+      name, mint: draft.mint.trim(), symbol,
+      conditions: conditions.map(condition => ({ metric: condition.metric, op: condition.op, value: Number(condition.value), windowMinutes: Number(condition.windowMinutes) || 0 })),
+      logic: draft.logic, windowMinutes: Number(draft.windowMinutes) || 60, sizingUsd: Number(draft.sizingUsd) || 25, cooldownSec: Number(draft.cooldownSec) || 3600,
+      exits: { takeProfit: Number(draft.takeProfit) || 0, stopLoss: Number(draft.stopLoss) || 0 },
+      execution: draft.execution === 'live' ? 'live' : 'paper', status, mode: 'auto'
+    }));
+    strategyBuilderOpen = false; strategyDraft = null; strategyEditingId = ''; strategyStep = 0; strategyBacktest = null; strategyBacktestError = ''; strategyBacktestLoading = false;
+    window.toast(status === 'active' ? 'Strategy activated in paper.' : 'Strategy saved as a draft.');
+    return data;
+  }
+  function strategyTemplateCard(template, onClick) {
+    const card = mk('button', 'ws-strategy-template' + (strategyTemplate === template.id ? ' active' : ''));
+    card.type = 'button';
+    card.append(mk('span', 'ws-strategy-kicker', template.kicker), mk('strong', '', template.title), mk('p', '', template.desc), mk('small', '', strategySummary(template.conditions, template.logic, template.conditions.find(condition => condition.metric === 'change')?.windowMinutes || 60)));
+    card.onclick = onClick;
+    return card;
+  }
+  function strategyConditionRow(condition, index) {
+    const row = mk('div', 'ws-condition-row');
+    const metric = mk('select', 'hf-input ws-condition-metric');
+    for (const [value, label] of STRATEGY_METRICS) { const option = mk('option', '', label); option.value = value; metric.append(option); }
+    metric.value = condition.metric;
+    const op = mk('select', 'hf-input ws-condition-op');
+    for (const [value, label] of STRATEGY_OPS) { const option = mk('option', '', label); option.value = value; op.append(option); }
+    op.value = condition.op;
+    const value = mk('input', 'hf-input ws-condition-value'); value.type = 'number'; value.step = 'any'; value.value = String(condition.value ?? '');
+    const remove = ibtn('delete', 'Remove trigger', () => {
+      if (!strategyDraft) return;
+      strategyDraft.conditions.splice(index, 1);
+      if (!strategyDraft.conditions.length) strategyDraft.conditions.push({ metric: 'change24h', op: 'below', value: -10, windowMinutes: 0 });
+      strategyBacktest = null; strategyBacktestError = '';
+      draw();
+    });
+    metric.onchange = () => { condition.metric = metric.value; strategyBacktest = null; strategyBacktestError = ''; draw(); };
+    op.onchange = () => { condition.op = op.value; strategyBacktest = null; strategyBacktestError = ''; };
+    value.oninput = () => { condition.value = Number(value.value); strategyBacktest = null; strategyBacktestError = ''; };
+    row.append(metric, op, value, remove);
+    return row;
+  }
+  function applyStrategyProfile(id) {
+    const profile = STRATEGY_PROFILES.find(item => item.id === id); if (!profile || !strategyDraft) return;
+    strategyProfile = id;
+    strategyDraft.sizingUsd = profile.sizingUsd;
+    strategyDraft.cooldownSec = profile.cooldownSec;
+    strategyDraft.takeProfit = profile.takeProfit;
+    strategyDraft.stopLoss = profile.stopLoss;
+    strategyBacktest = null; strategyBacktestError = '';
+    draw();
+  }
+  async function runStrategyBacktest() {
+    if (!strategyDraft) return;
+    strategyBacktestLoading = true; strategyBacktestError = '';
+    draw();
+    try {
+      const result = await call2(window.aurora.walletStrategyBacktest({
+        mint: strategyDraft.mint, conditions: strategyDraft.conditions, logic: strategyDraft.logic,
+        windowMinutes: strategyDraft.windowMinutes,
+        sizingUsd: strategyDraft.sizingUsd, takeProfit: strategyDraft.takeProfit, stopLoss: strategyDraft.stopLoss,
+        cooldownSec: strategyDraft.cooldownSec, range: strategyBacktestRange, startingCash: 1000, feePct: 0.5
+      }));
+      strategyBacktest = result;
+    } catch (error) { strategyBacktestError = error.message; }
+    finally { strategyBacktestLoading = false; draw(); }
+  }
+  function strategyBuilderPanel(s) {
+    const draft = strategyDraft;
+    const wrap = mk('div', 'ws-strategy-builder');
+    const bar = mk('div', 'ws-stepper');
+    [['Asset', 'Pick the token'], ['Idea', 'Choose a setup'], ['Rules', 'Tune triggers'], ['Distill', 'Shape the risk'], ['Test', 'Check history'], ['Launch', 'Review and save']].forEach(([label, hint], index) => {
+      const step = mk('button', 'ws-stepper-step' + (index === strategyStep ? ' active' : '') + (index < strategyStep ? ' done' : ''));
+      step.type = 'button'; step.disabled = index > strategyStep;
+      const stepLabel = mk('span', 'ws-stepper-label'); stepLabel.append(mk('strong', '', label), mk('small', '', hint));
+      step.append(mk('span', 'ws-stepper-num', index < strategyStep ? '✓' : String(index + 1)), stepLabel);
+      step.onclick = () => { if (index <= strategyStep) { strategyStep = index; draw(); } };
+      bar.append(step);
+    });
+    wrap.append(bar);
+    const body = mk('div', 'ws-strategy-step');
+    if (strategyStep === 0) {
+      body.append(mk('h3', 'ws-strategy-step-title', 'What are we trading?'));
+      const token = field('Token mint', 'text'); token.querySelector('input').value = draft.mint || ''; token.querySelector('input').spellcheck = false; token.querySelector('input').placeholder = 'Paste a Solana mint';
+      token.querySelector('input').oninput = () => { draft.mint = token.querySelector('input').value.trim(); if (!draft.symbol) draft.symbol = sym(draft.mint, s); strategyBacktest = null; };
+      const use = btn('Use current token', { sm: true, variant: 'ghost' }, () => {
+        const mint = chartMint || (s.holdings || [])[0]?.mint || '';
+        if (!mint) return window.toast('Open a token in Trade first.');
+        draft.mint = mint; draft.symbol = sym(mint, s); strategyBacktest = null; draw();
+      });
+      body.append(token, use);
+      const picks = [...(s.holdings || []), ...(s.watchlist || [])].filter(item => item.mint).slice(0, 5);
+      if (picks.length) {
+        const chips = mk('div', 'ws-strategy-picks');
+        for (const item of picks) {
+          const chip = mk('button', 'ws-chip', item.symbol || short(item.mint)); chip.type = 'button';
+          chip.onclick = () => { draft.mint = item.mint; draft.symbol = item.symbol || sym(item.mint, s); strategyBacktest = null; draw(); };
+          chips.append(chip);
+        }
+        body.append(mk('span', 'ws-sub', 'Quick picks'), chips);
+      }
+      body.append(mk('p', 'ws-sub ws-note', 'A strategy watches this token. It does not place a live order until you explicitly activate it.'));
+    } else if (strategyStep === 1) {
+      body.append(mk('h3', 'ws-strategy-step-title', 'Choose an idea'));
+      body.append(mk('p', 'ws-sub ws-note', 'Start with a proven shape, then tune every trigger on the next step.'));
+      const templates = mk('div', 'ws-strategy-templates');
+      for (const template of STRATEGY_TEMPLATES) templates.append(strategyTemplateCard(template, () => applyStrategyTemplate(template.id)));
+      body.append(templates);
+      const chosen = STRATEGY_TEMPLATES.find(item => item.id === strategyTemplate);
+      if (chosen) body.append(mk('p', 'ws-strategy-preview', `${chosen.title}: buy when ${strategySummary(chosen.conditions, chosen.logic, draft.windowMinutes)}.`));
+    } else if (strategyStep === 2) {
+      body.append(mk('h3', 'ws-strategy-step-title', 'Tune the triggers'));
+      body.append(mk('p', 'ws-sub ws-note', 'Keep it simple. Two or three triggers are usually enough. Every change clears the old test result.'));
+      const conditions = mk('div', 'ws-condition-list');
+      const renderConditions = () => { conditions.replaceChildren(); draft.conditions.forEach((condition, index) => conditions.append(strategyConditionRow(condition, index))); };
+      renderConditions();
+      const add = btn('Add trigger', { sm: true, variant: 'ghost', icon: 'plus' }, () => {
+        if (draft.conditions.length >= 8) return window.toast('Eight triggers is the maximum.');
+        draft.conditions.push({ metric: 'change24h', op: 'below', value: -10, windowMinutes: 0 }); strategyBacktest = null; draw();
+      });
+      const logic = mk('div', 'ws-seg');
+      for (const [value, label] of [['and', 'Match all'], ['or', 'Match any']]) { const b = mk('button', draft.logic === value ? 'active' : '', label); b.type = 'button'; b.onclick = () => { draft.logic = value; strategyBacktest = null; draw(); }; logic.append(b); }
+      const logicWrap = mk('div', 'ws-strategy-logic'); logicWrap.append(mk('span', 'ws-sub', 'Logic'), logic);
+      const windowField = field('Window for change triggers', 'select', ['15m', '1h', '4h', '24h']); const windowValues = [15, 60, 240, 1440]; [...windowField.querySelectorAll('option')].forEach((option, index) => { option.value = String(windowValues[index]); }); windowField.querySelector('select').value = String(draft.windowMinutes || 60); windowField.querySelector('select').onchange = () => { draft.windowMinutes = Number(windowField.querySelector('select').value) || 60; strategyBacktest = null; draw(); };
+      body.append(conditions, add, logicWrap, window, mk('p', 'ws-strategy-preview', `Buy when ${strategySummary(draft.conditions, draft.logic, draft.windowMinutes)}.`));
+    } else if (strategyStep === 3) {
+      body.append(mk('h3', 'ws-strategy-step-title', 'Distill the risk'));
+      body.append(mk('p', 'ws-sub ws-note', 'Choose a risk profile, then adjust it. Smaller size and tighter stops survive more mistakes.'));
+      const profiles = mk('div', 'ws-strategy-profiles');
+      const activeProfile = strategyProfileFor(draft);
+      for (const profile of STRATEGY_PROFILES) {
+        const card = mk('button', 'ws-strategy-profile' + (activeProfile === profile.id ? ' active' : '')); card.type = 'button';
+        card.append(mk('strong', '', profile.title), mk('p', '', profile.desc), mk('small', '', `${money(profile.sizingUsd)} entry · ${strategyCooldown(profile.cooldownSec)} cooldown · ${profile.takeProfit}% TP · ${profile.stopLoss}% SL`));
+        card.onclick = () => applyStrategyProfile(profile.id);
+        profiles.append(card);
+      }
+      body.append(profiles);
+      const size = field('Size per entry (USD)', 'number'); size.querySelector('input').value = String(draft.sizingUsd || 25); size.querySelector('input').oninput = () => { draft.sizingUsd = Number(size.querySelector('input').value) || 25; strategyProfile = 'custom'; strategyBacktest = null; };
+      const cooldown = field('Cooldown', 'select', ['5m', '15m', '1h', '4h', '24h']); const cooldownValues = [300, 900, 3600, 14400, 86400]; [...cooldown.querySelectorAll('option')].forEach((option, index) => { option.value = String(cooldownValues[index]); }); cooldown.querySelector('select').value = String(draft.cooldownSec || 3600); cooldown.querySelector('select').onchange = () => { draft.cooldownSec = Number(cooldown.querySelector('select').value); strategyProfile = 'custom'; strategyBacktest = null; };
+      const tp = field('Take profit %', 'number'); tp.querySelector('input').value = String(draft.takeProfit || 0); tp.querySelector('input').oninput = () => { draft.takeProfit = Number(tp.querySelector('input').value) || 0; strategyProfile = 'custom'; strategyBacktest = null; };
+      const sl = field('Stop loss %', 'number'); sl.querySelector('input').value = String(draft.stopLoss || 0); sl.querySelector('input').oninput = () => { draft.stopLoss = Number(sl.querySelector('input').value) || 0; strategyProfile = 'custom'; strategyBacktest = null; };
+      const fields = mk('div', 'ws-strategy-riskfields'); fields.append(size, cooldown, tp, sl);
+      body.append(fields, mk('p', 'ws-sub ws-note', `Approx. max loss per entry at the stop: ${money((draft.sizingUsd || 0) * (draft.stopLoss || 0) / 100)} plus fees.`));
+    } else if (strategyStep === 4) {
+      body.append(mk('h3', 'ws-strategy-step-title', 'Test the idea'));
+      body.append(mk('p', 'ws-sub ws-note', 'Run the rule over cached candles. Fees are included at 0.5% per side. This is a sanity check, not a promise.'));
+      const controls = mk('div', 'ws-strategy-testbar');
+      const range = mk('select', 'hf-input'); for (const value of ['1D', '7D', '30D']) { const option = mk('option', '', value); option.value = value; range.append(option); } range.value = strategyBacktestRange;
+      range.onchange = () => { strategyBacktestRange = range.value; strategyBacktest = null; strategyBacktestError = ''; draw(); };
+      controls.append(range, btn(strategyBacktestLoading ? 'Testing…' : 'Run test', { sm: true, variant: 'primary', icon: 'run', disabled: strategyBacktestLoading }, () => runStrategyBacktest().catch(error => window.toast(error.message))));
+      body.append(controls);
+      if (strategyBacktestLoading) body.append(skeleton(3));
+      else if (strategyBacktestError) body.append(mk('p', 'ws-sub ws-note hf-down', strategyBacktestError));
+      else if (strategyBacktest) {
+        const metrics = strategyBacktest.metrics || {};
+        const stats = mk('div', 'ws-backtest-metrics');
+        for (const [label, value, cls] of [
+          ['Win rate', `${Number(metrics.winRate || 0).toFixed(1)}%`, metrics.winRate >= 50 ? 'hf-up' : ''],
+          ['Trades', `${metrics.trades || 0} · W/L ${metrics.wins || 0}/${metrics.losses || 0}`, ''],
+          ['Net P&L', `${(metrics.netPnl || 0) >= 0 ? '+' : ''}${money(metrics.netPnl || 0)}`, (metrics.netPnl || 0) >= 0 ? 'hf-up' : 'hf-down'],
+          ['Return', `${(metrics.returnPct || 0) >= 0 ? '+' : ''}${Number(metrics.returnPct || 0).toFixed(2)}%`, (metrics.returnPct || 0) >= 0 ? 'hf-up' : 'hf-down'],
+          ['Max drawdown', `${Number(metrics.maxDrawdownPct || 0).toFixed(1)}%`, 'hf-down'],
+          ['Profit factor', metrics.profitFactor == null ? '∞' : Number(metrics.profitFactor).toFixed(2), '']
+        ]) { const cell = mk('span'); cell.append(mk('small', '', label), mk('b', cls, value)); stats.append(cell); }
+        body.append(stats);
+        const chart = mk('div', 'ws-backtest-chart'); chart.append(sparkline((strategyBacktest.equity || []).map(point => ({ p: point.p })), 560, 120)); body.append(chart);
+        const tradeList = mk('div', 'ws-list ws-backtest-trades');
+        for (const trade of (strategyBacktest.trades || []).slice(0, 5)) tradeList.append(listItem(new Date(trade.entryAt).toLocaleString(), `${trade.reason} · ${trade.holdMinutes >= 60 ? `${(trade.holdMinutes / 60).toFixed(1)}h` : `${Math.round(trade.holdMinutes)}m`}`, `${trade.pnl >= 0 ? '+' : ''}${money(trade.pnl)}`, undefined, undefined, mk('span', `hf-badge${trade.pnl >= 0 ? ' ok' : ' live'}`, trade.pnl >= 0 ? 'win' : 'loss')));
+        if ((strategyBacktest.trades || []).length) body.append(panel('Recent test trades', {}, tradeList));
+        body.append(mk('p', 'ws-sub ws-note', `${strategyBacktest.candles} candles · ${strategyBacktest.range} · starts at ${money(strategyBacktest.startingCash)}. Past results do not predict future returns.`));
+      } else body.append(emptyState('strategies', 'Ready to test', 'Run the test to see win rate, trades, P&L and drawdown.'));
+    } else {
+      body.append(mk('h3', 'ws-strategy-step-title', 'Review and launch'));
+      const name = field('Strategy name', 'text'); name.querySelector('input').value = draft.name || `${draft.symbol || 'Token'} setup`; name.querySelector('input').oninput = () => { draft.name = name.querySelector('input').value; };
+      body.append(name);
+      const review = mk('div', 'ws-strategy-review');
+      review.append(mk('strong', '', 'The distilled rule'), mk('p', '', `Buy ${draft.symbol || short(draft.mint)} when ${strategySummary(draft.conditions, draft.logic, draft.windowMinutes)}.`), mk('small', '', `${money(draft.sizingUsd)} per entry · ${strategyCooldown(draft.cooldownSec)} cooldown · take profit ${draft.takeProfit || 0}% · stop loss ${draft.stopLoss || 0}%${draft.execution === 'live' ? ' · live execution preserved' : ' · paper only'}`));
+      body.append(review);
+      if (!strategyBacktest) body.append(mk('p', 'ws-sub ws-note', 'No test result yet. You can launch anyway, but testing first is recommended.'));
+      body.append(mk('p', 'ws-sub ws-note', 'Paper first. Aurora asks before any live execution.'));
+    }
+    const nav = mk('div', 'ws-strategy-nav');
+    if (strategyStep > 0) nav.append(btn('Back', { sm: true, variant: 'ghost' }, () => { strategyStep -= 1; draw(); }));
+    nav.append(mk('span', 'ws-top-spacer'));
+    if (strategyStep < 5) nav.append(btn('Continue', { sm: true, variant: 'primary' }, () => {
+      if (strategyStep === 0) { if (!draft.mint || draft.mint.length < 32) return window.toast('Paste a valid token mint.'); draft.symbol = draft.symbol || sym(draft.mint, s); draft.name = draft.name || `${draft.symbol || 'Token'} ${strategyTemplate === 'custom' ? 'strategy' : STRATEGY_TEMPLATES.find(item => item.id === strategyTemplate)?.title || 'strategy'}`; }
+      if (strategyStep === 2 && !draft.conditions.length) return window.toast('Add at least one trigger.');
+      strategyStep += 1; draw();
+    }));
+    if (strategyStep === 5) {
+      nav.append(btn('Save draft', { sm: true, variant: 'ghost' }, run(async () => saveStrategyDraft('draft'))));
+      nav.append(btn('Activate paper', { sm: true, variant: 'primary', icon: 'play' }, run(async () => saveStrategyDraft('active'))));
+    }
+    wrap.append(body, nav);
+    return panel(strategyEditingId ? 'Edit strategy' : 'Build a strategy', { actions: [btn('Cancel', { sm: true, variant: 'ghost' }, closeStrategyBuilder)] }, wrap);
+  }
+  function strategyCard(st) {
+    const card = mk('div', `ws-strategy-card${st.status === 'active' ? ' active' : ''}`);
+    const head = mk('div', 'ws-strategy-card-head');
+    const title = mk('div', 'ws-strategy-card-title');
+    title.append(mk('strong', '', st.name), mk('small', '', `${st.symbol || short(st.mint)} · ${(st.execution || 'paper').toUpperCase()}`));
+    const badge = mk('span', `hf-badge${st.status === 'active' ? ' ok' : ' muted'}`, st.status);
+    head.append(title, badge);
+    const rule = mk('p', 'ws-strategy-rule', `Buy when ${strategySummary(st.conditions, st.logic, st.windowMinutes)}.`);
+    const chips = mk('div', 'ws-strategy-chips');
+    for (const [label, value] of [['Entry', money(st.sizingUsd)], ['Every', strategyCooldown(st.cooldownSec)], ['TP', st.exits?.takeProfit ? `${st.exits.takeProfit}%` : '—'], ['SL', st.exits?.stopLoss ? `${st.exits.stopLoss}%` : '—'], ['Triggers', String(st.triggers || 0)]]) chips.append(mk('span', 'ws-strategy-chip', `${label} ${value}`));
+    const actions = mk('div', 'ws-strategy-card-actions');
+    actions.append(btn('Edit', { sm: true, variant: 'ghost', icon: 'strategies' }, () => startStrategyBuilder('custom', st)));
+    actions.append(btn(st.status === 'active' ? 'Pause' : 'Activate', { sm: true, variant: st.status === 'active' ? 'ghost' : 'primary', icon: st.status === 'active' ? 'pause' : 'play' }, run(async () => call2(window.aurora.walletStrategyStatus({ id: st.id, status: st.status === 'active' ? 'paused' : 'active' })))));
+    actions.append(ibtn('run', 'Run once', run(async () => { const r = await call2(window.aurora.walletStrategyRun(st.id)); window.toast(r.executed ? 'Triggered.' : (r.error || 'Conditions not met.')); })));
+    actions.append(ibtn('switch', st.execution === 'live' ? 'Switch to paper' : 'Switch to live', run(async () => call2(window.aurora.walletStrategySave({ ...st, execution: st.execution === 'live' ? 'paper' : 'live' })))));
+    actions.append(ibtn('delete', 'Delete', run(async () => call2(window.aurora.walletStrategyRemove(st.id)))));
+    card.append(head, rule, chips, actions);
+    if (st.lastDetail) card.append(mk('p', 'ws-strategy-last', `Last: ${st.lastDetail}`));
+    if (st.lastError) card.append(mk('p', 'ws-strategy-last hf-down', st.lastError));
+    return card;
+  }
   function drawStrategies(root, s) {
     const limits = cfg().limits || {};
-    head(root, 'Strategies', `Typed rules and theses, paper by default. Limits: position ${limits.maxPositionUsd ? money(limits.maxPositionUsd) : 'off'} · total ${limits.maxTotalUsd ? money(limits.maxTotalUsd) : 'off'} · daily ${limits.dailyCapUsd ? money(limits.dailyCapUsd) : 'off'}.`, [btn('Describe to Gigi', { variant: 'primary', sm: true, icon: 'chat' }, () => askGigi('Help me build a Solana strategy or thesis: token, signal, threshold, sizing in USD, cooldown, exits and limits. Show the rules, then activate it in paper.'))]);
-    const grid = mk('div', 'ws-canvas'); for (const t of wallet()?.theses || []) grid.append(thesisCard(t)); if ((wallet()?.theses || []).length) root.append(grid);
-    const list = mk('div', 'ws-list'); const strategies = wallet()?.strategies || [];
-    if (!strategies.length) list.append(emptyState('strategies', 'No rule strategies yet', 'Describe one to Gigi.'));
-    for (const st of strategies) {
-      const ct = mk('div', 'ws-ctrls');
-      ct.append(
-        ibtn('switch', 'Switch paper/live', run(async () => call2(window.aurora.walletStrategySave({ ...st, execution: st.execution === 'live' ? 'paper' : 'live' })))),
-        ibtn(st.status === 'active' ? 'pause' : 'play', st.status === 'active' ? 'Pause' : 'Activate', run(async () => call2(window.aurora.walletStrategyStatus({ id: st.id, status: st.status === 'active' ? 'paused' : 'active' })))),
-        ibtn('run', 'Run once', run(async () => { const r = await call2(window.aurora.walletStrategyRun(st.id)); window.toast(r.executed ? 'Triggered.' : (r.error || 'Conditions not met.')); })),
-        ibtn('delete', 'Delete', run(async () => call2(window.aurora.walletStrategyRemove(st.id))))
-      );
-      const badge = mk('span', `hf-badge${st.status === 'active' ? ' ok' : ' muted'}`, st.status === 'active' ? `${(st.execution || 'paper').toUpperCase()} · ACTIVE` : (st.execution || 'paper').toUpperCase());
-      list.append(listItem(`${st.name} · ${st.symbol || short(st.mint)}`, `${(st.conditions || []).map(c => `${c.metric} ${c.op} ${num(c.value)}`).join(st.logic === 'or' ? ' OR ' : ' AND ')}${st.lastError ? ' · ' + st.lastError : ''}`, undefined, undefined, ct, badge));
+    const strategies = wallet()?.strategies || [];
+    const theses = wallet()?.theses || [];
+    const liveAuto = cfg().liveAutoEnabled === true;
+    const actions = [
+      btn(strategyBuilderOpen ? 'Close builder' : 'New strategy', { variant: 'primary', sm: true, icon: strategyBuilderOpen ? 'chevron' : 'plus' }, () => strategyBuilderOpen ? closeStrategyBuilder() : startStrategyBuilder('custom')),
+      btn(liveAuto ? 'Live auto on' : 'Live auto off', { sm: true, variant: liveAuto ? 'primary' : 'ghost', icon: 'switch' }, run(async () => {
+        if (!liveAuto) {
+          if (cfg().execution !== 'live') throw Error('Switch to Live first.');
+          if (!cfg().vaultWalletId && !wallet()?.wc?.connected) throw Error('Select a live signing wallet first.');
+          if (!window.confirm('Enable live auto? Active LIVE strategies can place real trades automatically after their cooldown. Start with small caps.')) return null;
+        }
+        return call2(window.aurora.walletConfig({ liveAutoEnabled: !liveAuto }));
+      })),
+      btn('Ask Gigi', { sm: true, variant: 'ghost', icon: 'chat' }, () => askGigi('Help me build a Solana strategy: token, trigger, sizing, cooldown, take profit and stop loss. Explain the rule in plain language first, then create it as a paper strategy.'))
+    ];
+    head(root, 'Strategies', `Guided paper rules. Limits: position ${limits.maxPositionUsd ? money(limits.maxPositionUsd) : 'off'} · total ${limits.maxTotalUsd ? money(limits.maxTotalUsd) : 'off'} · daily ${limits.dailyCapUsd ? money(limits.dailyCapUsd) : 'off'}.`, actions);
+    if (liveAuto) root.append(mk('p', 'ws-sub ws-note hf-down', 'Live auto is ON. Active LIVE strategies can execute real trades after their cooldown.'));
+    if (strategyBuilderOpen) root.append(strategyBuilderPanel(s));
+    else {
+      const templates = mk('div', 'ws-strategy-templates ws-strategy-templates-page');
+      for (const template of STRATEGY_TEMPLATES) templates.append(strategyTemplateCard(template, () => startStrategyBuilder(template.id)));
+      root.append(panel('Start with a setup', {}, templates));
     }
-    root.append(panel('Rule strategies', {}, list));
-    root.append(panel('New signal', {}, signalForm(s)));
-    const sigList = mk('div', 'ws-list'); const sigs = wallet()?.signals || [];
-    if (!sigs.length) sigList.append(emptyState('alert', 'No signals yet', 'Create one above, or ask Gigi: “ping me when SOL drops 20%.”'));
-    for (const sg of sigs) { const ct = mk('div', 'ws-ctrls'); ct.append(ibtn(sg.enabled ? 'pause' : 'play', sg.enabled ? 'Disable' : 'Enable', run(async () => call2(window.aurora.walletSignalToggle(sg.id, !sg.enabled)))), ibtn('delete', 'Delete', run(async () => call2(window.aurora.walletSignalRemove(sg.id))))); const badge = mk('span', `hf-badge${sg.enabled ? ' ok' : ' muted'}`, sg.action === 'paper-buy' ? 'paper buy' : 'notify'); sigList.append(listItem(`${sg.name} · ${sg.symbol || short(sg.mint)}`, `${sg.condition.metric} ${sg.condition.op} ${num(sg.condition.value)}${sg.requireResearch ? ' · needs fresh research' : ''}${sg.lastTriggeredAt ? ' · last ' + new Date(sg.lastTriggeredAt).toLocaleString() : ''}`, undefined, undefined, ct, badge)); }
-    root.append(panel('Signals', {}, sigList));
+    const grid = mk('div', 'ws-strategy-grid');
+    if (!strategies.length) grid.append(emptyState('strategies', 'No strategies yet', 'Pick a setup above and Aurora will walk you through it.'));
+    else for (const st of strategies) grid.append(strategyCard(st));
+    root.append(panel(`Your strategies${strategies.length ? ` · ${strategies.length}` : ''}`, {}, grid));
+    if (theses.length) { const thesisGrid = mk('div', 'ws-canvas'); for (const t of theses) thesisGrid.append(thesisCard(t)); root.append(panel('Theses', {}, thesisGrid)); }
+    root.append(panel('Signals', {}, signalForm(s), signalListBody()));
   }
-
+  function signalListBody() {
+    const list = mk('div', 'ws-list'); const sigs = wallet()?.signals || [];
+    if (!sigs.length) list.append(emptyState('alert', 'No signals yet', 'Create one above, or ask Gigi: “ping me when SOL drops 20%.”'));
+    for (const sg of sigs) {
+      const ct = mk('div', 'ws-ctrls');
+      ct.append(ibtn(sg.enabled ? 'pause' : 'play', sg.enabled ? 'Disable' : 'Enable', run(async () => call2(window.aurora.walletSignalToggle(sg.id, !sg.enabled)))), ibtn('delete', 'Delete', run(async () => call2(window.aurora.walletSignalRemove(sg.id)))));
+      const badge = mk('span', `hf-badge${sg.enabled ? ' ok' : ' muted'}`, sg.action === 'paper-buy' ? 'paper buy' : 'notify');
+      list.append(listItem(`${sg.name} · ${sg.symbol || short(sg.mint)}`, `${sg.condition.metric} ${sg.condition.op} ${num(sg.condition.value)}${sg.requireResearch ? ' · needs fresh research' : ''}${sg.lastTriggeredAt ? ' · last ' + new Date(sg.lastTriggeredAt).toLocaleString() : ''}`, undefined, undefined, ct, badge));
+    }
+    return list;
+  }
   function csvDownload(name, rows) { const csv = rows.map(row => row.map(cell => `"${String(cell == null ? '' : cell).replace(/"/g, '""')}"`).join(',')).join('\n'); const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' }); const url = URL.createObjectURL(blob); const a = mk('a'); a.href = url; a.download = name; a.style.display = 'none'; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
   function journalRows(p, s) { const rows = []; for (const o of p?.orders || []) rows.push({ kind: 'paper', at: o.at, mint: o.mint, symbol: o.symbol || short(o.mint), side: o.side, value: o.valueUsd, pnl: o.side === 'sell' ? o.realizedPnlUsd : '', status: '', signature: '' }); for (const ex of wallet()?.executions || []) rows.push({ kind: 'live', at: ex.at, mint: ex.mint, symbol: sym(ex.mint, s), side: ex.side, value: ex.valueUsd ? money(ex.valueUsd) : '', pnl: '', status: ex.status, signature: ex.signature || '', venue: ex.venue || '', pool: ex.pool || '' }); return rows.sort((a, b) => b.at - a.at); }
   function drawJournal(root, s) {
@@ -1780,7 +2481,7 @@
   const search = el('ws-search'); let searchTimer;
   search.oninput = () => { clearTimeout(searchTimer); const q = search.value.trim(); if (!q) { results.hidden = true; return; } searchTimer = setTimeout(async () => { try { const found = await call2(window.aurora.walletSearch(q)); results.replaceChildren(); for (const token of found.slice(0, 10)) { const item = listItem(token.symbol, `${money(token.priceUsd)} · ${token.change24h >= 0 ? '+' : ''}${token.change24h.toFixed(2)}%`); item.style.cursor = 'pointer'; item.onclick = () => { results.hidden = true; search.value = ''; section = 'trade'; selectToken(token.address); }; results.append(item); } results.hidden = !found.length; } catch (error) { window.toast(error.message); } }, 300); };
   document.addEventListener('click', event => { if (!event.target.closest('.ws-search')) results.hidden = true; });
-  document.addEventListener('keydown', event => { if (!open) return; if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); openPalette(); } if (event.key === 'Escape') { closePalette(); results.hidden = true; if (!viewer.hidden) closeViewer(); } });
+  document.addEventListener('keydown', event => { if (!open) return; if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); openPalette(); } if (event.key === 'Escape') { if (!tutorial.hidden) { closeTutorial(); return; } closePalette(); results.hidden = true; if (!viewer.hidden) closeViewer(); } });
 
   window.AuroraWorkspace = { open: openWorkspace, enter: () => openWorkspace(true), close, isOpen: () => open, toggle: () => open ? close() : openWorkspace(true) };
   window.addEventListener('aurora-view-rendered', () => { if (!open) return; draw(); });
@@ -1792,6 +2493,7 @@
     if (event.type === 'pump-auto') applyPumpAuto(event.auto);
     if (event.type === 'pump-launch') mergePumpLaunches(event.rows, event.at);
     if (event.type === 'wallet-scan-progress') { if (typeof view !== 'undefined') view.scanJob = event.job; if (open) draw(); }
+    if (event.type === 'people-activity') { const item = event.item || {}; if (item.action === 'launch') window.toast(`${item.label} launched ${item.symbol}.`); else if (item.action === 'graduated') window.toast(`${item.symbol} graduated.`); else if (item.action === 'convergence') window.toast(`${item.label} hold ${item.symbol}.`); else if (item.label) window.toast(`${item.label} ${item.action} ${item.symbol || ''}`.trim()); if (open && section === 'people') draw(); }
     if (event.type === 'people-scan-progress') { peopleScanState = event.job; if (open) draw(); }
     if (event.type === 'people-scan-complete') { peopleScanState = event.job; if (open) draw(); if (event.job) window.toast(`Scanned ${event.job.done} person${event.job.done === 1 ? '' : 's'}${event.job.errors ? ` · ${event.job.errors} failed` : ''}.`); }
     if (event.type === 'wallet-scan-complete') { if (typeof view !== 'undefined') view.scanJob = event.job; if (open) draw(); if (event.job) window.toast(`Scanned ${event.job.done} wallet${event.job.done === 1 ? '' : 's'}${event.job.errors ? ` · ${event.job.errors} failed` : ''}.`); }
@@ -1799,4 +2501,5 @@
     if (event.type === 'wallet-alert') window.toast(`Alert · ${event.alert.symbol || short(event.alert.mint)} ${event.alert.direction} ${money(event.alert.price)} (now ${money(event.alert.current)})`);
   });
   const navButton = el('trading-open'); if (navButton) navButton.onclick = () => window.AuroraWorkspace.toggle();
+  const cryptoButton = el('crypto-open'); if (cryptoButton) cryptoButton.onclick = () => window.AuroraWorkspace.open(true);
 })();

@@ -43,11 +43,14 @@ const strategy=require('./wallet/strategy');
 const swap=require('./wallet/swap');
 const session=require('./wallet/session');
 const vault=require('./wallet/vault');
+const txSign=require('./wallet/tx-sign');
 const views=require('./views');
 const thesisModel=require('./thesis');
 const signals=require('./signals');
 const follow=require('./wallet/follow');
 const peopleModule=require('./wallet/people');
+const starterPack=require('./wallet/starter');
+const backtest=require('./wallet/backtest');
 const copyWallet=require('./wallet/copy');
 const mirrorWallet=require('./wallet/mirror');
 const pumpModule=require('./wallet/pump');
@@ -68,11 +71,15 @@ let pumpStream=null;
 const pumpRecent=new Map();
 const pumpMetadataCache=new Map();
 const PUMP_TTL=25000;
+const PUMP_CACHE_TTL=24*3600000;
+let pumpCacheLoaded=false;
+let pumpGeckoCooldownUntil=0;
 const PUMP_FEED_LIMIT=50;
 const pumpLaunchQueue=new Set();
 let pumpLaunchTimer=null;
 let pumpProfileCache={at:0,rows:[]};
 let peopleScanJob=null;
+const convergenceNotified=new Map();
 const WINDOWS_ONLY_TOOLS=new Set(['computer','run_powershell']);
 async function beginComputer(){if(!computerActive){computerActive=true;emit({type:"computer-activity",active:true});if(voiceSession?.active&&!mainWindow.isMinimized())mainWindow.minimize();await new Promise(resolve=>setTimeout(resolve,300));}}
 function endComputer(){computerActive=false;emit({type:"computer-activity",active:false});}
@@ -224,7 +231,7 @@ function askQuestion(question, signal, fileIds = '[]', choices = '[]') {
   });
 }
 function notificationUrl(value) { return typeof value === 'string' && /^https:\/\//.test(value) && value.length <= 500 ? value : ''; }
-function normalizeNotifications(list) { if (!Array.isArray(list)) return []; return list.filter(item => item && item.id).slice(-50).map(item => ({ id: String(item.id), at: Number(item.at) || 0, kind: ['alert', 'signal', 'wallet', 'info'].includes(item.kind) ? item.kind : 'info', title: String(item.title || '').slice(0, 120), body: String(item.body || '').slice(0, 300), read: item.read === true, url: notificationUrl(item.url), wallet: typeof item.wallet === 'string' ? item.wallet.slice(0, 60) : '', signature: typeof item.signature === 'string' ? item.signature.slice(0, 160) : '' })); }
+function normalizeNotifications(list) { if (!Array.isArray(list)) return []; return list.filter(item => item && item.id).slice(-50).map(item => ({ id: String(item.id), at: Number(item.at) || 0, kind: ['alert', 'signal', 'wallet', 'person', 'info'].includes(item.kind) ? item.kind : 'info', title: String(item.title || '').slice(0, 120), body: String(item.body || '').slice(0, 300), read: item.read === true, url: notificationUrl(item.url), wallet: typeof item.wallet === 'string' ? item.wallet.slice(0, 60) : '', signature: typeof item.signature === 'string' ? item.signature.slice(0, 160) : '' })); }
 function pushNotification({ kind = 'info', title = '', body = '', url = '', wallet = '', signature = '' } = {}) { if (!data) return null; const item = { id: randomUUID(), at: Date.now(), kind, title: String(title).slice(0, 120), body: String(body).slice(0, 300), read: false, url: notificationUrl(url), wallet: typeof wallet === 'string' ? wallet.slice(0, 60) : '', signature: typeof signature === 'string' ? signature.slice(0, 160) : '' }; data.notifications.push(item); if (data.notifications.length > 50) data.notifications = data.notifications.slice(-50); save().catch(() => {}); if (!lifecycle.closing) emit({ type: 'notification', notifications: data.notifications }); try { if (Notification && Notification.isSupported && Notification.isSupported()) { const note = new Notification({ title: title || 'Aurora', body: body || '' }); note.on('click', () => { showMain(); if (!lifecycle.closing) emit({ type: 'notification-open', notification: item }); }); note.show(); } } catch {} return item; }
 function snapshot() {
   return {version:app.getVersion(),platform:process.platform,theme:data.theme,themes:themes.list,updates:updater?.snapshot(),plugins:extensions.groups.filter(g=>g.id!=='shell'||process.platform==='win32').map(g=>({...g,enabled:data.plugins[g.id]})),mcpServers:mcpManager?.snapshot(data.mcpServers)||[],provider:data.provider,connections:connections.snapshot(data),appearance:data.appearance,appearances:appearances.list,mode:data.mode,projects:data.projects,activeProjectId:data.activeProjectId,computerEnabled:data.computerEnabled!==false, voice: voiceSnapshot(), model: data.model, reasoningEffort: data.reasoningEffort || '', agent: agents.get(data.agent).id, auraMember: data.auraMember === true, auraKey: data.auraKey || '', automations: automationView(), agents: agents.list.map(agent=>({id:agent.id,name:agent.name,role:agent.role,essence:agent.essence,focus:agent.focus,tagline:agent.tagline,accent:agent.accent,avatar:agent.avatar,greeting:agent.greeting,companion:!!agent.companion})), combo: (currentTeam()||{}).id || '', combos: (current()?agents.teamsFor(current().agent):agents.teamsFor(agents.DEFAULT_AGENT)).map(team=>({id:team.id,label:team.label,members:team.members,aura:team.aura})), custom: (current()&&Array.isArray(current().custom)?current().custom:[]), workspace: data.workspace, searchFolders: data.searchFolders || [], searchRoots: searchRoots(), hasKey: !connections.definitions[data.provider].key || !!data.connections[data.provider].encryptedKey, searchHasKey: !!data.connections['ollama-cloud'].encryptedKey, heliusHasKey: !!data.wallet.heliusEncryptedKey, jupiterHasKey: !!data.wallet.jupiterEncryptedKey, chats:sessions.summaries(data), currentId: data.currentId, messages: current().messages, busy: !!run, detached: !!petWindow, state: petState, notifications: data.notifications, unread: data.notifications.filter(item => !item.read).length, wallet: walletView(), scanJob: followScanJobView() };
@@ -233,7 +240,7 @@ function walletView() {
   if (!data || !data.wallet) return null;
   const state = wallet ? wallet.snapshot() : null;
   const walletConfig = { ...data.wallet }; delete walletConfig.heliusEncryptedKey; delete walletConfig.jupiterEncryptedKey;
-  return { config: walletConfig, state: state ? { loading: state.loading, error: state.error, updated: state.updated, watching: state.watching, total: state.total, change24h: state.change24h, holdings: state.holdings, watchlist: state.watchlist, markets: state.markets || [], alerts: state.alerts } : null, wc: { connected: !!(data.wallet.wcSession && data.wallet.wcSession.topic), accounts: (data.wallet.wcSession && data.wallet.wcSession.accounts) || [] }, paper: paper.valuation(data.wallet.paper, mint => (wallet ? wallet.priceOf(mint) : 0)), research: (data.wallet.research || []).slice().reverse().map(item => ({ id: item.id, kind: item.kind || 'token', address: item.address || '', mint: item.mint, symbol: item.symbol, status: item.status, createdAt: item.createdAt, hasReport: !!item.report, error: item.error })), strategies: data.wallet.strategies || [], limits: data.wallet.limits || {}, executions: (data.wallet.executions || []).slice(-20).reverse(), session: data.wallet.session, vault: (data.wallet.vault || []).map(({ encryptedSecret, ...rest }) => rest), views: data.wallet.views || [], theses: data.wallet.theses || [], followed: data.wallet.followed || [], people: (data.wallet.people || []).map(person => ({ id: person.id, address: person.address, label: person.label, kind: person.kind, tags: person.tags || [], note: person.note || '', addedAt: person.addedAt, scanAt: person.scanAt || 0, scan: person.scan || null, launches: person.launches || [], stats: peopleModule.personStats(person), lastError: person.lastError || '' })), view: activeView, signals: data.wallet.signals || [] };
+  return { config: walletConfig, state: state ? { loading: state.loading, error: state.error, updated: state.updated, watching: state.watching, total: state.total, change24h: state.change24h, holdings: state.holdings, watchlist: state.watchlist, markets: state.markets || [], alerts: state.alerts } : null, wc: { connected: !!(data.wallet.wcSession && data.wallet.wcSession.topic), accounts: (data.wallet.wcSession && data.wallet.wcSession.accounts) || [] }, paper: paper.valuation(data.wallet.paper, mint => (wallet ? wallet.priceOf(mint) : 0)), research: (data.wallet.research || []).slice().reverse().map(item => ({ id: item.id, kind: item.kind || 'token', address: item.address || '', mint: item.mint, symbol: item.symbol, status: item.status, createdAt: item.createdAt, hasReport: !!item.report, error: item.error })), strategies: data.wallet.strategies || [], limits: data.wallet.limits || {}, executions: (data.wallet.executions || []).slice(-20).reverse(), session: data.wallet.session, vault: (data.wallet.vault || []).map(({ encryptedSecret, ...rest }) => rest), views: data.wallet.views || [], theses: data.wallet.theses || [], followed: data.wallet.followed || [], people: (data.wallet.people || []).map(person => ({ id: person.id, address: person.address, label: person.label, kind: person.kind, tags: person.tags || [], note: person.note || '', addedAt: person.addedAt, scanAt: person.scanAt || 0, scan: person.scan || null, launches: person.launches || [], stats: peopleModule.personStats(person), watchActivity: person.watchActivity !== false, activityAt: person.activityAt || 0, lastActivityAt: person.lastActivityAt || 0, activityError: person.activityError || '', source: person.source || '', sourceRank: person.sourceRank || 0, pnlUsd: person.pnlUsd || 0, winRate: person.winRate || 0, profileUrl: person.profileUrl || '', starter: person.starter === true, lastError: person.lastError || '' })), view: activeView, signals: data.wallet.signals || [] };
 }
 function emit(event) { if(lifecycle.closing)return;if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('event', event); if(walletWindow&&!walletWindow.isDestroyed())walletWindow.webContents.send('event',event); voiceNotch?.event(event); commandBrick?.event(event); }
 function state(value, detail = '') {
@@ -454,7 +461,8 @@ async function generate(config, viaVoice = false) {
             walletHistory: async limit=>{ if(!data.wallet.addresses.length)throw Error('No wallet address is connected. Add one in Settings, Wallet.'); const rpc=data.wallet.rpc||solana.DEFAULT_RPC; const max=Math.min(25,Math.max(1,Number(limit)||10)); const out=[]; for(const address of data.wallet.addresses)out.push({address,transactions:await solana.fetchHistory(address,{rpc,limit:max}).catch(()=>[])}); return out; },
             walletFollow: async (address,label)=>{ const value=solana.normalizeAddress(address); const existing=data.wallet.followed.find(item=>item.address===value); if(existing){ if(label){existing.label=String(label).trim().slice(0,40);await save();if(!lifecycle.closing)emit({type:'wallet',wallet:walletView()});} return {id:existing.id,address:value,label:existing.label}; } if(data.wallet.followed.length>=follow.MAX_FOLLOWED)throw Error(`You can follow up to ${follow.MAX_FOLLOWED} wallets.`); data.wallet.followed=follow.normalizeFollowed([...data.wallet.followed,{address:value,label:typeof label==='string'?label:''}]); const item=data.wallet.followed.find(entry=>entry.address===value); await save();if(!lifecycle.closing)emit({type:'wallet',wallet:walletView()}); return {id:item.id,address:value,label:item.label}; },
             walletFollowList: ()=>data.wallet.followed.map(item=>({id:item.id,address:item.address,label:item.label,note:item.note,tags:item.tags,scanAt:item.scanAt,lastError:item.lastError,scan:item.scan?{total:item.scan.total,sol:item.scan.sol,change24h:item.scan.change24h,tokenCount:item.scan.tokenCount,top10Share:item.scan.top10Share,lastActive:item.scan.lastActive,holdings:item.scan.holdings.slice(0,8).map(h=>({symbol:h.symbol,mint:h.mint,amount:h.amount,value:h.value,share:h.share}))}:null})),
-            walletPeople: ()=> (data.wallet.people||[]).map(item=>({id:item.id,address:item.address,label:item.label,kind:item.kind,tags:item.tags,note:item.note,scanAt:item.scanAt,stats:peopleModule.personStats(item),launches:(item.launches||[]).slice(0,10),scan:item.scan?{total:item.scan.total,sol:item.scan.sol,change24h:item.scan.change24h,tokenCount:item.scan.tokenCount,top10Share:item.scan.top10Share,holdings:(item.scan.holdings||[]).slice(0,8).map(h=>({symbol:h.symbol,mint:h.mint,amount:h.amount,value:h.value,share:h.share}))}:null,lastError:item.lastError||''})),
+            walletPeople: ()=> (data.wallet.people||[]).map(item=>({id:item.id,address:item.address,label:item.label,kind:item.kind,tags:item.tags,note:item.note,scanAt:item.scanAt,watchActivity:item.watchActivity!==false,lastActivityAt:item.lastActivityAt||0,source:item.source||'',sourceRank:item.sourceRank||0,pnlUsd:item.pnlUsd||0,winRate:item.winRate||0,starter:item.starter===true,stats:peopleModule.personStats(item),launches:(item.launches||[]).slice(0,10),scan:item.scan?{total:item.scan.total,sol:item.scan.sol,change24h:item.scan.change24h,tokenCount:item.scan.tokenCount,top10Share:item.scan.top10Share,holdings:(item.scan.holdings||[]).slice(0,8).map(h=>({symbol:h.symbol,mint:h.mint,amount:h.amount,value:h.value,share:h.share}))}:null,lastError:item.lastError||''})),
+            walletPeopleWatch: async (address,enabled)=>{ const person=(data.wallet.people||[]).find(item=>item.address===address||item.id===address); if(!person)throw Error('Tracked person not found.'); person.watchActivity=String(enabled)!=='false'; if(person.watchActivity&&!person.lastSignature&&person.scan?.recent?.[0]?.signature)person.lastSignature=person.scan.recent[0].signature; await save();if(!lifecycle.closing)emit({type:'wallet',wallet:walletView()}); return {id:person.id,address:person.address,label:person.label,watchActivity:person.watchActivity}; },
             walletPeopleAdd: async (address,label,role,note)=>{ const value=solana.normalizeAddress(address); const before=data.wallet.people||[]; data.wallet.people=peopleModule.upsertPerson(before,{address:value,label:typeof label==='string'?label:'',kind:typeof role==='string'?role:'other',note:typeof note==='string'?note:''}); const person=data.wallet.people.find(item=>item.address===value); if(person.kind==='dev'){for(const event of pumpRecent.values()){if(event.creator!==value)continue;const launch=peopleModule.launchFromPumpEvent(event,event.completed);if(launch)peopleModule.mergeLaunch(person,launch);}} try{await peopleModule.scanPerson(person,peopleScanOptions());}catch(error){person.lastError=error.message;} await save();if(!lifecycle.closing)emit({type:'wallet',wallet:walletView()}); return {id:person.id,address:person.address,label:person.label,kind:person.kind,scan:person.scan?{total:person.scan.total,holdings:(person.scan.holdings||[]).slice(0,8)}:null,launches:(person.launches||[]).slice(0,10),lastError:person.lastError||''}; },
             walletTokenIntel: async mint=>tokenIntel({mint}),
             walletScan: async address=>{ const item=data.wallet.followed.find(entry=>entry.address===address||entry.id===address); if(!item)throw Error('Follow that wallet first with wallet_follow.'); try{await scanFollowed(item);}catch(error){item.lastError=error.message;await save();if(!lifecycle.closing)emit({type:'wallet',wallet:walletView()});throw error;} await save();if(!lifecycle.closing)emit({type:'wallet',wallet:walletView()}); return {address:item.address,label:item.label,total:item.scan.total,sol:item.scan.sol,change24h:item.scan.change24h,tokenCount:item.scan.tokenCount,top10Share:item.scan.top10Share,lastActive:item.scan.lastActive,holdings:item.scan.holdings.slice(0,10),unpriced:item.scan.unpriced,recent:item.scan.recent}; },
@@ -747,12 +755,28 @@ async function streamPumpRows(events) {
   });
   return list.map(event => pumpStreamRow(event, pairs.get(event.mint) || null));
 }
+function pumpCachePath() { return path.join(app.getPath('userData'), 'pump-cache.json'); }
+async function loadPumpCache() {
+  if (pumpCacheLoaded) return;
+  pumpCacheLoaded = true;
+  try {
+    const raw = await fs.readFile(pumpCachePath(), 'utf8');
+    const cached = JSON.parse(raw);
+    if (cached?.feeds && Date.now() - Number(cached.at || 0) < PUMP_CACHE_TTL) {
+      pumpDataset = { ...cached, stale: true, error: 'Cached feed. Refreshing…' };
+    }
+  } catch {}
+}
+async function savePumpCache(dataset) {
+  try { await fs.writeFile(pumpCachePath(), JSON.stringify({ at: dataset.at, feeds: dataset.feeds }), 'utf8'); } catch {}
+}
 async function loadPumpDataset(force = false) {
   if (!force && pumpDataset && Date.now() - pumpDataset.at < PUMP_TTL) return pumpDataset;
   if (pumpPending) return pumpPending;
   pumpPending = (async () => {
     try {
       startPumpStream();
+      if (Date.now() < pumpGeckoCooldownUntil) throw new Error('GeckoTerminal is cooling down; showing cached and live stream data.');
       const pools = [];
       for (let page = 1; page <= 3; page++) {
         const batch = await walletProviders.geckoNewPools({ page });
@@ -800,8 +824,10 @@ async function loadPumpDataset(force = false) {
       const profileRows = feeds.new.length < PUMP_FEED_LIMIT ? await recentPumpProfiles() : [];
       if (streamRows.length || profileRows.length) mergePumpNewFeed(feeds, [...streamRows, ...profileRows]);
       pumpDataset = { at: Date.now(), stale: false, error: '', feeds };
+      savePumpCache(pumpDataset).catch(() => {});
       return pumpDataset;
     } catch (error) {
+      if (/429/.test(error.message)) pumpGeckoCooldownUntil = Date.now() + 120000;
       const streamRows = await streamPumpRows([...pumpRecent.values()]).catch(() => []);
       const profileRows = streamRows.length < PUMP_FEED_LIMIT ? await recentPumpProfiles() : [];
       const fallbackRows = [...streamRows, ...profileRows];
@@ -868,6 +894,16 @@ async function xstocksAsset(value) {
   const factor = Number(multiplierValue?.currentMultiplier) || 1;
   return { asset: assetRow, pair, quote, multiplier: factor, multiplierDetail: multiplierValue || null, reserves: reserves || null, tradingStatus: tradingStatus || null, stock: stock || null, premium: xstocks.premiumDiscount(pair?.priceUsd, quote, factor), at: Date.now() };
 }
+async function importRadarStarter(force = false) {
+  if (!force && Number(data.wallet.radarSeedVersion) === starterPack.VERSION) return { added: 0, total: (data.wallet.people || []).length, at: data.wallet.radarSeededAt, already: true };
+  const merged = starterPack.mergeStarterPeople(data.wallet.people || []);
+  data.wallet.people = merged.people;
+  data.wallet.radarSeededAt = Date.now();
+  data.wallet.radarSeedVersion = starterPack.VERSION;
+  await save();
+  if (!lifecycle.closing) emit({ type: 'wallet', wallet: walletView() });
+  return { added: merged.added, total: data.wallet.people.length, at: data.wallet.radarSeededAt, already: false };
+}
 function peopleScanOptions() {
   return { rpc: data.wallet.rpc || solana.DEFAULT_RPC, heliusKey: walletSecret('heliusEncryptedKey'), jupiterKey: walletSecret('jupiterEncryptedKey') };
 }
@@ -901,7 +937,88 @@ function noteTrackedDevEvent(event, migration = false) {
   const previous = (person.launches || []).find(item => item.mint === launch.mint);
   if (previous?.completed) launch.completed = true;
   peopleModule.mergeLaunch(person, launch);
+  const symbol = launch.symbol || follow.shortAddress(launch.mint);
+  if (!previous && !migration && person.watchActivity !== false) {
+    const item = { id: person.id, label: person.label, kind: person.kind, action: 'launch', symbol, mint: launch.mint, at: Date.now(), signature: event.signature || '' };
+    pushNotification({ kind: 'person', title: `${person.label} launched ${symbol}`, body: 'New observed Pump.fun launch.', url: `https://pump.fun/coin/${launch.mint}`, wallet: person.address, signature: event.signature || '' });
+    if (!lifecycle.closing) emit({ type: 'people-activity', item });
+  } else if (migration && previous && !previous.completed && person.watchActivity !== false) {
+    const item = { id: person.id, label: person.label, kind: person.kind, action: 'graduated', symbol, mint: launch.mint, at: Date.now(), signature: event.signature || '' };
+    pushNotification({ kind: 'person', title: `${person.label}'s ${symbol} graduated`, body: 'The token completed its bonding curve.', url: `https://pump.fun/coin/${launch.mint}`, wallet: person.address, signature: event.signature || '' });
+    if (!lifecycle.closing) emit({ type: 'people-activity', item });
+  }
   save().catch(() => {});
+  if (!lifecycle.closing) emit({ type: 'wallet', wallet: walletView() });
+}
+function personHoldingMap(scan) {
+  const map = new Map();
+  for (const item of [...(scan?.holdings || []), ...(scan?.unpriced || [])]) {
+    if (item?.mint) map.set(item.mint, { amount: Number(item.amount) || 0, symbol: item.symbol || follow.shortAddress(item.mint), value: Number(item.value) || 0 });
+  }
+  return map;
+}
+function personActivityChange(previous, next) {
+  const before = personHoldingMap(previous), after = personHoldingMap(next);
+  let best = null;
+  for (const [mint, item] of after) {
+    const old = before.get(mint);
+    if (!old || item.amount > old.amount * 1.01) {
+      const delta = item.amount - (old?.amount || 0);
+      if (!best || delta * Math.max(item.value / Math.max(item.amount, 1), 1) > best.score) {
+        best = { action: old ? 'added' : 'bought', mint, symbol: item.symbol, value: item.value, score: delta * Math.max(item.value / Math.max(item.amount, 1), 1) };
+      }
+    }
+  }
+  for (const [mint, item] of before) {
+    const current = after.get(mint);
+    if (!current || current.amount < item.amount * 0.99) {
+      const delta = item.amount - (current?.amount || 0);
+      if (!best || delta * Math.max(item.value / Math.max(item.amount, 1), 1) > best.score) {
+        best = { action: current ? 'reduced' : 'sold', mint, symbol: item.symbol, value: item.value, score: delta * Math.max(item.value / Math.max(item.amount, 1), 1) };
+      }
+    }
+  }
+  return best;
+}
+function maybeNotifyConvergence(mint, symbol) {
+  if (!mint) return;
+  const seen = new Set(), kol = [];
+  for (const person of data.wallet.people || []) {
+    if (seen.has(person.address) || !holdingFor(person, mint)) continue;
+    seen.add(person.address);
+    if (['kol', 'influencer'].includes(person.kind) || (person.tags || []).some(tag => ['kol', 'influencer'].includes(String(tag).toLowerCase()))) kol.push(person.label);
+  }
+  for (const item of data.wallet.followed || []) {
+    if (seen.has(item.address) || !holdingFor(item, mint)) continue;
+    seen.add(item.address);
+    const kind = followedKind(item);
+    if (['kol', 'influencer'].includes(kind) || (item.tags || []).some(tag => ['kol', 'influencer'].includes(String(tag).toLowerCase()))) kol.push(item.label || follow.shortAddress(item.address));
+  }
+  if (kol.length < 2) return;
+  if (Date.now() - (convergenceNotified.get(mint) || 0) < 30 * 60000) return;
+  convergenceNotified.set(mint, Date.now());
+  pushNotification({ kind: 'person', title: `KOL convergence · ${symbol}`, body: `${kol.length} tracked KOLs currently hold this token.`, url: `https://pump.fun/coin/${mint}` });
+  if (!lifecycle.closing) emit({ type: 'people-activity', item: { action: 'convergence', symbol, mint, at: Date.now(), label: `${kol.length} KOLs`, kind: 'kol' } });
+}
+async function handlePersonActivity(person, fresh) {
+  if (!person || lifecycle.closing) return;
+  const previous = person.scan || null;
+  try { await peopleModule.scanPerson(person, peopleScanOptions()); } catch (error) { person.lastError = error.message; }
+  const change = previous ? personActivityChange(previous, person.scan) : null;
+  const latest = fresh[0] || {};
+  const signature = latest.signature || '';
+  const symbol = change?.symbol || person.scan?.holdings?.[0]?.symbol || '';
+  const action = change?.action || 'moved';
+  const label = action === 'bought' || action === 'added' ? 'bought' : action === 'sold' || action === 'reduced' ? 'sold' : 'moved';
+  const title = change?.mint ? `${person.label} ${label} ${symbol}` : `${person.label} moved`;
+  const body = change?.mint
+    ? `${label === 'sold' ? 'Reduced or exited' : 'Added or received'} ${symbol}${change.value ? ` · ~$${Math.round(change.value).toLocaleString()}` : ''}.`
+    : `${fresh.length} new transaction${fresh.length === 1 ? '' : 's'}.`;
+  const url = change?.mint ? `https://pump.fun/coin/${change.mint}` : signature ? `https://solscan.io/tx/${encodeURIComponent(signature)}` : '';
+  pushNotification({ kind: 'person', title, body, url, wallet: person.address, signature });
+  if (!lifecycle.closing) emit({ type: 'people-activity', item: { id: person.id, label: person.label, kind: person.kind, action, symbol, mint: change?.mint || '', at: Date.now(), signature, value: change?.value || 0 } });
+  if (change?.mint && ['bought', 'added'].includes(change.action)) maybeNotifyConvergence(change.mint, symbol);
+  await save().catch(() => {});
   if (!lifecycle.closing) emit({ type: 'wallet', wallet: walletView() });
 }
 function collectDevLaunches(creator, person = null) {
@@ -1243,6 +1360,36 @@ async function autoMirrorFollowed(item,fresh){
   }finally{mirrorBusy.delete(item.address);}
 }
 async function wcUser() { const accounts = (data.wallet.wcSession && data.wallet.wcSession.accounts) || []; const address = (accounts[0] || '').split(':').pop(); return solana.validateAddress(address) ? address : ''; }
+function selectedVaultWallet() {
+  const id = data.wallet.vaultWalletId || '';
+  return id ? (data.wallet.vault || []).find(bot => bot.id === id) || null : null;
+}
+async function executionSigner() {
+  const bot = selectedVaultWallet();
+  if (bot) return { type: 'vault', user: bot.publicKey, bot };
+  const user = await wcUser();
+  if (!user) return null;
+  const topic = (data.wallet.wcSession || {}).topic || '';
+  return { type: 'walletconnect', user, topic };
+}
+function decryptVaultSecret(bot) {
+  if (!bot?.encryptedSecret) throw new Error('Bot wallet key is missing.');
+  if (!safeStorage.isEncryptionAvailable()) throw new Error('Secure storage is unavailable.');
+  return safeStorage.decryptString(Buffer.from(bot.encryptedSecret, 'base64'));
+}
+async function sendVaultTransaction(rpc, transaction, bot) {
+  const secret = decryptVaultSecret(bot);
+  const signed = txSign.signSerializedTransaction(transaction, secret, bot.publicKey);
+  const signature = await solana.rpcCall(rpc, 'sendTransaction', [signed.transaction, { encoding: 'base64', skipPreflight: false, preflightCommitment: 'confirmed' }]);
+  return { signature: typeof signature === 'string' ? signature : '', publicKey: bot.publicKey };
+}
+async function signerReadiness(signer, rpc) {
+  const [version, balance] = await Promise.all([
+    solana.rpcCall(rpc, 'getVersion', []).catch(() => null),
+    solana.rpcCall(rpc, 'getBalance', [signer.user]).catch(() => null)
+  ]);
+  return { signerType: signer.type, user: signer.user, rpcOk: !!version, balanceSol: Number(balance || 0) / 1e9 };
+}
 async function resolveSwapParams(mint, amountUi, side) {
   const rpc = data.wallet.rpc || solana.DEFAULT_RPC;
   if (side === 'sell') {
@@ -1255,18 +1402,21 @@ async function resolveSwapParams(mint, amountUi, side) {
 }
 async function swapPreview({ mint, amountUi, slippageBps, side }) {
   if (data.wallet.execution !== 'live') throw new Error('Switch to Live mode in Settings, Wallet to preview a real swap.');
-  const user = await wcUser(); if (!user) throw new Error('Connect a wallet in Settings, Wallet first.');
+  const signer = await executionSigner(); if (!signer) throw new Error('Connect a wallet or select a bot wallet in Settings, Wallet first.');
+  const user = signer.user;
   const rpc = data.wallet.rpc || solana.DEFAULT_RPC;
+  const readiness = await signerReadiness(signer, rpc);
   const params = await resolveSwapParams(mint, amountUi, side);
   const quoteResponse = await swap.quote({ ...params, slippageBps }, {});
   const transaction = await swap.swapTransaction({ quoteResponse, userPublicKey: user }, {});
   const simulation = await swap.simulate(rpc, transaction, {}).catch(error => ({ ok: false, error: error.message, logs: [] }));
-  return { user, summary: swap.summarize(quoteResponse), simulation };
+  return { user, readiness, summary: swap.summarize(quoteResponse), simulation };
 }
 async function swapExecute({ mint, amountUi, slippageBps, side }) {
   if (data.wallet.execution !== 'live') throw new Error('Switch to Live mode in Settings, Wallet first.');
-  const user = await wcUser(); if (!user) throw new Error('Connect a wallet first.');
-  const topic = (data.wallet.wcSession || {}).topic || ''; if (!topic) throw new Error('WalletConnect session expired. Reconnect.');
+  const signer = await executionSigner(); if (!signer) throw new Error('Connect a wallet or select a bot wallet first.');
+  if (signer.type === 'walletconnect' && !signer.topic) throw new Error('WalletConnect session expired. Reconnect.');
+  const user = signer.user;
   const rpc = data.wallet.rpc || solana.DEFAULT_RPC;
   const params = await resolveSwapParams(mint, amountUi, side);
   const quoteResponse = await swap.quote({ ...params, slippageBps }, {});
@@ -1274,7 +1424,7 @@ async function swapExecute({ mint, amountUi, slippageBps, side }) {
   const simulation = await swap.simulate(rpc, transaction, {});
   if (!simulation.ok) throw new Error('The transaction failed simulation; nothing was signed.');
   const record = { id: randomUUID(), at: Date.now(), signature: '', side, mint, inAmount: String(quoteResponse.inAmount), outAmount: String(quoteResponse.outAmount), status: 'submitted', error: '' };
-  try { const result = await solanaConnect.signAndSendTransaction(topic, transaction); record.signature = result.signature || ''; }
+  try { const result = signer.type === 'vault' ? await sendVaultTransaction(rpc, transaction, signer.bot) : await solanaConnect.signAndSendTransaction(signer.topic, transaction); record.signature = result.signature || ''; }
   catch (error) { record.status = 'failed'; record.error = error.message; data.wallet.executions.push(record); if (data.wallet.executions.length > 100) data.wallet.executions = data.wallet.executions.slice(-100); await save(); if (!lifecycle.closing) emit({ type: 'wallet', wallet: walletView() }); throw error; }
   data.wallet.executions.push(record); if (data.wallet.executions.length > 100) data.wallet.executions = data.wallet.executions.slice(-100);
   await save(); if (!lifecycle.closing) emit({ type: 'wallet', wallet: walletView() });
@@ -1289,8 +1439,10 @@ async function pumpTokenState(mint) {
 }
 async function pumpPreview({ mint, side, usd, amountUi, slippagePct, priorityFeeSol }) {
   if (data.wallet.execution !== 'live') throw new Error('Switch to Live mode to preview a real pump trade.');
-  const user = await wcUser(); if (!user) throw new Error('Connect a wallet in Settings, Wallet first.');
+  const signer = await executionSigner(); if (!signer) throw new Error('Connect a wallet or select a bot wallet in Settings, Wallet first.');
+  const user = signer.user;
   const rpc = data.wallet.rpc || solana.DEFAULT_RPC;
+  const readiness = await signerReadiness(signer, rpc);
   const info = await pumpTokenState(mint);
   const isBuy = side !== 'sell';
   if (isBuy && !info.completed && data.wallet.pumpLiveEnabled !== true) throw new Error('Enable live bonding-curve trades in the Pump.fun panel first.');
@@ -1306,12 +1458,13 @@ async function pumpPreview({ mint, side, usd, amountUi, slippagePct, priorityFee
   const simulation = await swap.simulate(rpc, built.transaction, {}).catch(error => ({ ok: false, error: error.message, logs: [] }));
   const tokenPrice = Number(info.pair?.priceUsd || info.gecko?.priceUsd || 0);
   const estimate = isBuy ? (tokenPrice > 0 ? value / tokenPrice : 0) : (tokenPrice > 0 && solPrice > 0 ? Number(amountUi) * tokenPrice / solPrice : 0);
-  return { user, completed: info.completed, pool: info.pool, summary: { ...pumpPortal.summary(built.request), solPrice, tokenPrice, estimate, side: isBuy ? 'buy' : 'sell' }, simulation };
+  return { user, readiness, completed: info.completed, pool: info.pool, summary: { ...pumpPortal.summary(built.request), solPrice, tokenPrice, estimate, side: isBuy ? 'buy' : 'sell' }, simulation };
 }
 async function pumpExecute({ mint, side, usd, amountUi, slippagePct, priorityFeeSol }) {
   if (data.wallet.execution !== 'live') throw new Error('Switch to Live mode first.');
-  const user = await wcUser(); if (!user) throw new Error('Connect a wallet first.');
-  const topic = (data.wallet.wcSession || {}).topic || ''; if (!topic) throw new Error('WalletConnect session expired. Reconnect.');
+  const signer = await executionSigner(); if (!signer) throw new Error('Connect a wallet or select a bot wallet first.');
+  if (signer.type === 'walletconnect' && !signer.topic) throw new Error('WalletConnect session expired. Reconnect.');
+  const user = signer.user;
   const rpc = data.wallet.rpc || solana.DEFAULT_RPC;
   const info = await pumpTokenState(mint);
   const isBuy = side !== 'sell';
@@ -1343,7 +1496,7 @@ async function pumpExecute({ mint, side, usd, amountUi, slippagePct, priorityFee
     status: 'submitted', error: '', venue: 'PumpPortal', pool: info.pool, valueUsd: isBuy ? value : Number(amountUi) * tokenPrice,
     slippagePct: slippage, priorityFeeSol: priorityFee, feePct: pumpPortal.LOCAL_FEE_PCT
   };
-  try { const result = await solanaConnect.signAndSendTransaction(topic, built.transaction); record.signature = result.signature || ''; }
+  try { const result = signer.type === 'vault' ? await sendVaultTransaction(rpc, built.transaction, signer.bot) : await solanaConnect.signAndSendTransaction(signer.topic, built.transaction); record.signature = result.signature || ''; }
   catch (error) {
     record.status = 'failed'; record.error = error.message;
     data.wallet.executions.push(record); if (data.wallet.executions.length > 100) data.wallet.executions = data.wallet.executions.slice(-100);
@@ -1355,12 +1508,13 @@ async function pumpExecute({ mint, side, usd, amountUi, slippagePct, priorityFee
   record.status = outcome.status; record.error = outcome.error || ''; await save(); if (!lifecycle.closing) emit({ type: 'wallet', wallet: walletView() });
   return { signature: record.signature, status: record.status, summary: { ...pumpPortal.summary(built.request), completed: info.completed, solPrice, tokenPrice, estimate } };
 }
-async function executeLiveIntent(intent) {
+async function executeLiveIntent(intent, { manual = false } = {}) {
   const strategy = data.wallet.strategies.find(item => item.id === intent.id);
   if (!strategy) return;
   try {
     if (data.wallet.execution !== 'live') throw new Error('Live mode is off.');
-    const user = await wcUser(); if (!user) throw new Error('Connect a wallet for live execution.');
+    if (!manual && data.wallet.liveAutoEnabled !== true) throw new Error('Live auto is off. Enable it in Strategies first.');
+    const signer = await executionSigner(); if (!signer) throw new Error('Connect a wallet or select a bot wallet for live execution.');
     const solPrice = wallet.priceOf(swap.SOL_MINT); if (!(solPrice > 0)) throw new Error('No SOL price yet.');
     const amountUi = intent.usd / solPrice;
     const preview = await swapPreview({ mint: intent.mint, amountUi, slippageBps: 50, side: 'buy' });
@@ -1470,7 +1624,9 @@ app.whenReady().then(async () => {
     onError:message=>emit({type:'error',message})
   });
   inputOverlay=createInputOverlay();computerControl=(process.platform==='darwin'?createComputerControlMac:createComputerControl)({onActivity:value=>inputOverlay.activity(value)});
-  wallet=createWalletManager({config:data.wallet,onUpdate:()=>{if(!lifecycle.closing)emit({type:'wallet',wallet:walletView()});},onSamples:()=>{save().catch(()=>{});},onHistory:()=>{save().catch(()=>{});},onFollowed:()=>{save().catch(()=>{});},getJupiterKey:()=>{try{return data.wallet.jupiterEncryptedKey?safeStorage.decryptString(Buffer.from(data.wallet.jupiterEncryptedKey,'base64')):'';}catch{return '';}},onFollowedActivity:(item,items)=>{if(lifecycle.closing)return;const label=followedLabel(item);const latest=items.find(tx=>tx.blockTime);const latestSignature=items.find(tx=>tx.signature)?.signature||'';pushNotification({kind:'wallet',title:`${label} moved`,body:`${items.length} new transaction${items.length===1?'':'s'}${latest?` · ${new Date(latest.blockTime*1000).toLocaleTimeString()}`:''}. Open Wallets to scan.`,wallet:item.address,signature:latestSignature,url:latestSignature?`https://solscan.io/tx/${encodeURIComponent(latestSignature)}`:''});autoMirrorFollowed(item,items).catch(()=>{});},onIntent:intent=>{executeLiveIntent(intent).catch(()=>{});},onSignal:(rule,quote)=>{if(lifecycle.closing)return;emit({type:'wallet-signal',signal:{id:rule.id,name:rule.name,symbol:rule.symbol||wallet.shortMint(rule.mint),detail:rule.lastDetail,action:rule.action}});pushNotification({kind:'signal',title:rule.name,body:`${rule.symbol||''} ${rule.lastDetail||''}`.trim()});if(rule.action==='paper-buy'&&rule.usd>0){try{paper.buy(data.wallet.paper,{mint:rule.mint,symbol:rule.symbol,usd:rule.usd,price:wallet.priceOf(rule.mint)});save().catch(()=>{});emit({type:'wallet',wallet:walletView()});}catch{}}},freshResearch:(mint,rule)=>{const report=(data.wallet.research||[]).filter(x=>x.mint===mint&&x.status==='ready').slice(-1)[0];if(!report)return false;return Date.now()-report.createdAt<=(rule?.researchMaxAgeMin||720)*60000;},onAlert:alert=>{if(lifecycle.closing)return;emit({type:'wallet-alert',alert});pushNotification({kind:'alert',title:`${alert.symbol||''} ${alert.direction} ${alert.price}`.trim(),body:`Now ${alert.current}`});try{if(mainWindow&&!mainWindow.isDestroyed())mainWindow.flashFrame(true);}catch{}}});
+  wallet=createWalletManager({config:data.wallet,onUpdate:()=>{if(!lifecycle.closing)emit({type:'wallet',wallet:walletView()});},onSamples:()=>{save().catch(()=>{});},onHistory:()=>{save().catch(()=>{});},onFollowed:()=>{save().catch(()=>{});},getJupiterKey:()=>{try{return data.wallet.jupiterEncryptedKey?safeStorage.decryptString(Buffer.from(data.wallet.jupiterEncryptedKey,'base64')):'';}catch{return '';}},onFollowedActivity:(item,items)=>{if(lifecycle.closing)return;const label=followedLabel(item);const latest=items.find(tx=>tx.blockTime);const latestSignature=items.find(tx=>tx.signature)?.signature||'';pushNotification({kind:'wallet',title:`${label} moved`,body:`${items.length} new transaction${items.length===1?'':'s'}${latest?` · ${new Date(latest.blockTime*1000).toLocaleTimeString()}`:''}. Open Wallets to scan.`,wallet:item.address,signature:latestSignature,url:latestSignature?`https://solscan.io/tx/${encodeURIComponent(latestSignature)}`:''});autoMirrorFollowed(item,items).catch(()=>{});},onPersonActivity:(item,items)=>handlePersonActivity(item,items).catch(()=>{}),onIntent:intent=>{executeLiveIntent(intent).catch(()=>{});},onSignal:(rule,quote)=>{if(lifecycle.closing)return;emit({type:'wallet-signal',signal:{id:rule.id,name:rule.name,symbol:rule.symbol||wallet.shortMint(rule.mint),detail:rule.lastDetail,action:rule.action}});pushNotification({kind:'signal',title:rule.name,body:`${rule.symbol||''} ${rule.lastDetail||''}`.trim()});if(rule.action==='paper-buy'&&rule.usd>0){try{paper.buy(data.wallet.paper,{mint:rule.mint,symbol:rule.symbol,usd:rule.usd,price:wallet.priceOf(rule.mint)});save().catch(()=>{});emit({type:'wallet',wallet:walletView()});}catch{}}},freshResearch:(mint,rule)=>{const report=(data.wallet.research||[]).filter(x=>x.mint===mint&&x.status==='ready').slice(-1)[0];if(!report)return false;return Date.now()-report.createdAt<=(rule?.researchMaxAgeMin||720)*60000;},onAlert:alert=>{if(lifecycle.closing)return;emit({type:'wallet-alert',alert});pushNotification({kind:'alert',title:`${alert.symbol||''} ${alert.direction} ${alert.price}`.trim(),body:`Now ${alert.current}`});try{if(mainWindow&&!mainWindow.isDestroyed())mainWindow.flashFrame(true);}catch{}}});
+  loadPumpCache().catch(()=>{});
+  importRadarStarter().catch(()=>{});
   solanaConnect=createSolanaConnect({getProjectId:()=>data.wallet.wcProjectId,getStorage:()=>data.wallet.wcStorage,setStorage:value=>{data.wallet.wcStorage=value;save().catch(()=>{});}});
   if(session.afterStartup(data.wallet.session,{paper:data.wallet.paper}))save().catch(()=>{});
   if(data.computerEnabled!==false)Promise.allSettled([computerControl.prepare?.(),inputOverlay.prepare?.()]);
@@ -1818,7 +1974,7 @@ app.whenReady().then(async () => {
     const address=solana.normalizeAddress(value.address);
     const before=data.wallet.people||[];
     const existing=before.find(item=>item.address===address);
-    data.wallet.people=peopleModule.upsertPerson(before,{...value,address,scan:existing?.scan,scanAt:existing?.scanAt});
+    data.wallet.people=peopleModule.upsertPerson(before,{...value,address,scan:existing?.scan,scanAt:existing?.scanAt,watchActivity:value.watchActivity===undefined?existing?.watchActivity:value.watchActivity});
     const person=data.wallet.people.find(item=>item.address===address);
     if(person&&person.kind==='dev'){
       for(const event of pumpRecent.values()){
@@ -1835,6 +1991,21 @@ app.whenReady().then(async () => {
       await save();
       if(!lifecycle.closing)emit({type:'wallet',wallet:walletView()});
     }
+    return snapshot();
+  });
+  handle('wallet-radar-starter', async value=>{
+    const result=await importRadarStarter(value?.force===true);
+    const out=snapshot();
+    out.radarStarter=result;
+    return out;
+  });
+  handle('wallet-people-watch', async value=>{
+    const person=(data.wallet.people||[]).find(item=>item.id===value?.id||item.address===value?.id||item.address===value?.address);
+    if(!person)throw Error('Tracked person not found.');
+    person.watchActivity=value?.enabled!==false;
+    if(person.watchActivity&&!person.lastSignature&&person.scan?.recent?.[0]?.signature)person.lastSignature=person.scan.recent[0].signature;
+    await save();
+    if(!lifecycle.closing)emit({type:'wallet',wallet:walletView()});
     return snapshot();
   });
   handle('wallet-people-remove', async value=>{
@@ -1961,13 +2132,25 @@ app.whenReady().then(async () => {
     if(!['draft','active','paused'].includes(status))throw Error('Unknown strategy status.');
     item.status=status;return walletAfter();
   });
+  handle('wallet-strategy-backtest', async value=>{
+    if(!value||typeof value!=='object')throw Error('Invalid strategy test.');
+    const mint=solana.normalizeAddress(value.mint);
+    const range=['1D','7D','30D'].includes(value.range)?value.range:'7D';
+    const conditions=(Array.isArray(value.conditions)?value.conditions.map(c=>strategy.normalizeCondition(c)).filter(Boolean):[]);
+    if(!conditions.length)throw Error('Add at least one trigger before testing.');
+    const points=await wallet.ready(mint,range).catch(()=>[]);
+    const history=points&&points.length>=2?points:wallet.history(mint,range);
+    if(!history||history.length<10)throw Error('Not enough price history for this token. Try another range or a more liquid token.');
+    const result=backtest.runBacktest({points:history,conditions,logic:value.logic,windowMinutes:value.windowMinutes,sizingUsd:value.sizingUsd,takeProfitPct:value.takeProfitPct??value.takeProfit,stopLossPct:value.stopLossPct??value.stopLoss,cooldownSec:value.cooldownSec,startingCash:value.startingCash,feePct:value.feePct});
+    return { ...result, range, symbol:(markets.marketFor(mint)||{}).symbol||wallet.shortMint(mint) };
+  });
   handle('wallet-strategy-run', async id=>{
     const item=data.wallet.strategies.find(entry=>entry.id===id);if(!item)throw Error('Strategy not found.');
     const savedStatus=item.status,savedMode=item.mode;
     item.status='active';item.mode='auto';item.lastRun=0;
     const result=strategy.runStrategies(data.wallet.paper,[item],(mint,win)=>wallet.signals(mint,win),{now:Date.now(),limits:data.wallet.limits});
     item.status=savedStatus;item.mode=savedMode;
-    for(const intent of result.intents)await executeLiveIntent(intent);
+    for(const intent of result.intents)await executeLiveIntent(intent,{manual:true});
     await save();if(!lifecycle.closing)emit({type:'wallet',wallet:walletView()});
     return {executed:result.executed.length,intents:result.intents.length,detail:item.lastDetail,error:item.lastError};
   });
@@ -2016,7 +2199,7 @@ app.whenReady().then(async () => {
     data.wallet.vault.push({id:randomUUID(),label,publicKey:vault.publicFromSecret(value.secret.trim()),encryptedSecret:safeStorage.encryptString(value.secret.trim()).toString('base64'),createdAt:Date.now()});
     return walletAfter();
   });
-  handle('wallet-vault-remove', async id=>{data.wallet.vault=data.wallet.vault.filter(item=>item.id!==id);return walletAfter();});
+  handle('wallet-vault-remove', async id=>{data.wallet.vault=data.wallet.vault.filter(item=>item.id!==id);if(data.wallet.vaultWalletId===id)data.wallet.vaultWalletId='';return walletAfter();});
   handle('wallet-view-show', async spec=>{ activeView=views.normalizeView(spec||{}); if(!lifecycle.closing)emit({type:'view',view:activeView}); return {view:activeView}; });
   handle('wallet-view-pin', async spec=>{ const view=views.normalizeView(spec||{}); if(!data.wallet.views.some(v=>v.id===view.id))data.wallet.views.push({...view,pinned:true}); if(data.wallet.views.length>40)data.wallet.views=data.wallet.views.slice(-40); return walletAfter(); });
   handle('wallet-view-remove', async id=>{ data.wallet.views=data.wallet.views.filter(v=>v.id!==id); if(activeView&&activeView.id===id)activeView=null; return walletAfter(); });

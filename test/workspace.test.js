@@ -1,6 +1,26 @@
 const { test } = require('node:test'), assert = require('node:assert/strict');
 const { createDesk, walletFixture, followedFixture, SOL, BONK } = require('./helpers/desk');
 
+test('Crypto opens the desk and Back to chat returns to the normal chat view', async () => {
+  const desk = createDesk({ wallet: walletFixture() });
+  desk.window.AuroraWorkspace.open(true);
+  await desk.flush(4);
+  desk.window.AuroraWorkspace.close();
+  await desk.flush(2);
+  const crypto = desk.document.getElementById('crypto-open');
+  const workspace = desk.document.getElementById('trading-workspace');
+  assert.equal(workspace.hidden, true);
+  assert.equal(crypto.hidden, false, 'Crypto button is visible after closing');
+  crypto.click();
+  await desk.flush(4);
+  assert.equal(workspace.hidden, false, 'Crypto opens the desk');
+  assert.equal(crypto.hidden, true, 'Crypto button hides inside the desk');
+  desk.document.getElementById('ws-close').click();
+  await desk.flush(2);
+  assert.equal(workspace.hidden, true, 'Back to chat closes the desk');
+  assert.equal(crypto.hidden, false, 'Crypto button returns');
+});
+
 test('the desk mounts and the Trade section renders without [object ...] placeholders', async () => {
   const desk = createDesk({ wallet: walletFixture() });
   desk.window.AuroraWorkspace.open(true);
@@ -15,6 +35,22 @@ test('the desk mounts and the Trade section renders without [object ...] placeho
   assert.match(content.textContent, /Pump\.fun migrated/, 'pump badge renders');
 });
 
+test('Portfolio Chart opens the real portfolio chart overlay', async () => {
+  const wallet = walletFixture();
+  wallet.state = { ...wallet.state, total: 100, change24h: 1, holdings: [{ mint: SOL, symbol: 'SOL', amount: 1, price: 100, value: 100, change24h: 1, share: 1 }] };
+  const desk = createDesk({ wallet });
+  desk.window.AuroraWorkspace.open(true);
+  await desk.flush();
+  desk.tab('portfolio').click();
+  await desk.flush(4);
+  const chart = [...desk.document.querySelectorAll('#ws-content button')].find(button => button.textContent.trim() === 'Chart');
+  assert.ok(chart, 'portfolio chart button renders');
+  chart.click();
+  await desk.flush(6);
+  assert.equal(desk.document.getElementById('ws-viewer').hidden, false, 'portfolio viewer opens');
+  assert.ok((desk.calls.walletPortfolioSeries || 0) >= 1, 'portfolio series requested');
+});
+
 test('wallets section renders followed wallets, a scan summary and actions', async () => {
   const desk = createDesk({ wallet: walletFixture({ followed: [followedFixture()] }) });
   desk.window.AuroraWorkspace.open(true);
@@ -23,9 +59,14 @@ test('wallets section renders followed wallets, a scan summary and actions', asy
   await desk.flush();
   const content = desk.document.getElementById('ws-content');
   assert.match(content.textContent, /Whale/);
-  assert.match(content.textContent, /Follow a wallet/);
-  assert.match(content.textContent, /Top 10/);
+  assert.match(content.textContent, /Wallets · 1/);
+  assert.match(content.textContent, /Top-10 coverage/);
   assert.match(content.textContent, /BONK/);
+  const add = [...content.querySelectorAll('button')].find(button => button.textContent.trim() === 'Add wallet');
+  assert.ok(add, 'add wallet action renders');
+  add.click();
+  await desk.flush();
+  assert.match(content.textContent, /Follow a wallet/);
   const scan = [...content.querySelectorAll('button')].find(button => button.textContent.trim() === 'Scan');
   assert.ok(scan, 'scan action renders');
   scan.click();
@@ -74,19 +115,140 @@ test('discover renders a screener with formatted numbers and tabs', async () => 
   assert.deepEqual(tabs, ['Trending', 'New pairs', 'Takeovers', 'Narratives']);
 });
 
-test('watch section renders the watchlist, alerts and the notification inbox', async () => {
+test('alerts section renders the event feed and price alerts', async () => {
   const desk = createDesk({ wallet: walletFixture() });
   desk.window.view.notifications = [{ id: 'n1', at: Date.now(), kind: 'alert', title: 'SOL above 100', body: 'Now 105', read: false }];
+  desk.window.view.wallet.paper.orders.push({ id: 'o1', at: Date.now(), mint: SOL, symbol: 'SOL', side: 'buy', valueUsd: 25, price: 100 });
   desk.window.AuroraWorkspace.open(true);
   await desk.flush();
-  desk.tab('watch').click();
+  desk.tab('alerts').click();
   await desk.flush(8);
   const text = desk.document.getElementById('ws-content').textContent;
   assert.match(text, /Price alerts/);
-  assert.match(text, /Notifications/);
+  assert.match(text, /Activity/);
   assert.match(text, /SOL above 100/);
+  const fills = [...desk.document.querySelectorAll('.ws-alert-filters button')].find(button => button.textContent.startsWith('Fills'));
+  assert.ok(fills, 'fills filter renders');
+  fills.click();
+  await desk.flush(4);
+  assert.match(desk.document.getElementById('ws-content').textContent, /Paper buy SOL/);
 });
 
+
+test('Tutorial opens on every section and switches languages', async () => {
+  const desk = createDesk({ wallet: walletFixture() });
+  desk.window.AuroraWorkspace.open(true);
+  await desk.flush();
+  desk.tab('strategies').click();
+  await desk.flush(4);
+  const content = desk.document.getElementById('ws-content');
+  const tutorial = [...content.querySelectorAll('.ws-tutorial-btn')].find(button => /Tutorial|Guida|Guide|Anleitung|Обучение/.test(button.textContent));
+  assert.ok(tutorial, 'tutorial button renders in section header');
+  tutorial.click();
+  await desk.flush(2);
+  const modal = desk.document.getElementById('ws-tutorial');
+  assert.equal(modal.hidden, false, 'tutorial opens');
+  assert.match(modal.textContent, /How it works/);
+  assert.match(modal.textContent, /Backtest/);
+  const italian = [...modal.querySelectorAll('.ws-tutorial-langs button')].find(button => button.textContent === 'IT');
+  italian.click();
+  await desk.flush(2);
+  assert.match(modal.textContent, /Come funziona/);
+  assert.match(modal.textContent, /ristrutturare|rischio|backtest/i);
+  desk.document.getElementById('ws-tutorial-close').click();
+  await desk.flush();
+  assert.equal(modal.hidden, true, 'tutorial closes');
+});
+
+test('guided strategy builder walks from template to saved paper strategy', async () => {
+  const desk = createDesk({ wallet: walletFixture() });
+  desk.window.AuroraWorkspace.open(true);
+  await desk.flush();
+  desk.tab('strategies').click();
+  await desk.flush(4);
+  const content = desk.document.getElementById('ws-content');
+  assert.equal(content.querySelectorAll('.ws-strategy-templates-page .ws-strategy-template').length, 8);
+  const dip = [...content.querySelectorAll('.ws-strategy-template')].find(button => /Buy the dip/.test(button.textContent));
+  assert.ok(dip, 'dip template renders');
+  dip.click();
+  await desk.flush(4);
+  assert.match(content.textContent, /What are we trading/);
+  const token = content.querySelector('.ws-strategy-step .hf-field input');
+  token.value = BONK;
+  token.dispatchEvent(new desk.window.Event('input', { bubbles: true }));
+  let next = [...content.querySelectorAll('button')].find(button => button.textContent.trim() === 'Continue');
+  assert.ok(next, 'continue from token step');
+  next.click();
+  await desk.flush(4);
+  assert.match(content.textContent, /Choose an idea/);
+  next = [...content.querySelectorAll('button')].find(button => button.textContent.trim() === 'Continue');
+  next.click();
+  await desk.flush(4);
+  assert.match(content.textContent, /Tune the triggers/);
+  assert.match(content.textContent, /Add trigger/);
+  next = [...content.querySelectorAll('button')].find(button => button.textContent.trim() === 'Continue');
+  next.click();
+  await desk.flush(4);
+  assert.match(content.textContent, /Distill the risk/);
+  assert.equal(content.querySelectorAll('.ws-strategy-profile').length, 3);
+  assert.match(content.querySelector('.ws-strategy-profile.active')?.textContent || '', /Balanced/);
+  next = [...content.querySelectorAll('button')].find(button => button.textContent.trim() === 'Continue');
+  next.click();
+  await desk.flush(4);
+  assert.match(content.textContent, /Test the idea/);
+  const runTest = [...content.querySelectorAll('button')].find(button => button.textContent.trim() === 'Run test');
+  assert.ok(runTest, 'run test action renders');
+  runTest.click();
+  await desk.flush(8);
+  assert.match(content.textContent, /Win rate/);
+  assert.match(content.textContent, /75.0%/);
+  next = [...content.querySelectorAll('button')].find(button => button.textContent.trim() === 'Continue');
+  next.click();
+  await desk.flush(4);
+  assert.match(content.textContent, /Review and launch/);
+  const save = [...content.querySelectorAll('button')].find(button => button.textContent.trim() === 'Save draft');
+  assert.ok(save, 'save draft action renders');
+  save.click();
+  await desk.flush(6);
+  assert.ok((desk.calls.walletStrategySave || 0) >= 1, 'strategy saved through IPC');
+  assert.ok(desk.toasts.some(message => /saved as a draft/i.test(message)), 'draft save toast');
+});
+
+test('live auto off requires explicit live signer and confirmation', async () => {
+  const desk = createDesk({ wallet: walletFixture({ config: { execution: 'live', addresses: [], limits: {}, mode: 'simple', currency: 'USD' }, wc: { connected: true, accounts: ['solana:abc'] } }) });
+  desk.window.confirm = () => true;
+  desk.window.AuroraWorkspace.open(true);
+  await desk.flush();
+  desk.tab('strategies').click();
+  await desk.flush(4);
+  const toggle = [...desk.document.querySelectorAll('#ws-content button')].find(button => button.textContent.trim() === 'Live auto off');
+  assert.ok(toggle, 'live auto toggle renders');
+  toggle.click();
+  await desk.flush(4);
+  assert.ok((desk.calls.walletConfig || 0) >= 1, 'live auto opt-in saved through wallet config');
+});
+
+test('signals use presets and a guided composer', async () => {
+  const desk = createDesk({ wallet: walletFixture() });
+  desk.window.AuroraWorkspace.open(true);
+  await desk.flush();
+  desk.tab('strategies').click();
+  await desk.flush(4);
+  const content = desk.document.getElementById('ws-content');
+  assert.equal(content.querySelectorAll('.ws-signal-preset').length, 5);
+  const dip = [...content.querySelectorAll('.ws-signal-preset')].find(button => /24h dip/.test(button.textContent));
+  assert.ok(dip, 'dip signal preset renders');
+  dip.click();
+  await desk.flush(4);
+  assert.match(content.textContent, /Build a signal/);
+  assert.match(content.textContent, /Notify me when 24h change is below -20.0%/);
+  const create = [...content.querySelectorAll('button')].find(button => button.textContent.trim() === 'Create signal');
+  assert.ok(create, 'create signal action renders');
+  create.click();
+  await desk.flush(6);
+  assert.ok((desk.calls.walletSignalSave || 0) >= 1, 'signal saved through IPC');
+  assert.ok(desk.toasts.some(message => /Signal created/.test(message)), 'signal toast');
+});
 
 test('compare shows tokens shared by followed wallets', async () => {
   const first = followedFixture();
@@ -113,11 +275,15 @@ test('copy to paper opens a budget form and calls the copy API', async () => {
   await desk.flush();
   desk.tab('wallets').click();
   await desk.flush();
-  const open = [...desk.document.querySelectorAll('#ws-content button')].find(button => button.textContent.trim() === 'Copy');
+  const automation = [...desk.document.querySelectorAll('#ws-content .ws-wallet-tabs button')].find(button => button.textContent.trim() === 'Automation');
+  assert.ok(automation, 'automation tab renders');
+  automation.click();
+  await desk.flush();
+  const open = [...desk.document.querySelectorAll('#ws-content .ws-wallet-automation-row button')].find(button => button.textContent.trim() === 'Copy to paper');
   assert.ok(open, 'copy action renders');
   open.click();
   await desk.flush();
-  const submit = [...desk.document.querySelectorAll('#ws-content button')].find(button => button.textContent.trim() === 'Copy to paper');
+  const submit = [...desk.document.querySelectorAll('#ws-content .ws-copyform button')].find(button => button.textContent.trim() === 'Copy to paper');
   assert.ok(submit, 'copy form renders');
   submit.click();
   await desk.flush();
@@ -133,9 +299,13 @@ test('auto-mirror controls render and save through the followed-wallet update AP
   desk.tab('wallets').click();
   await desk.flush();
   const content = desk.document.getElementById('ws-content');
+  const automation = [...content.querySelectorAll('.ws-wallet-tabs button')].find(button => button.textContent.trim() === 'Automation');
+  assert.ok(automation, 'automation tab renders');
+  automation.click();
+  await desk.flush();
   assert.match(content.textContent, /Auto-mirror/);
   assert.match(content.textContent, /Paper only/);
-  const save = [...content.querySelectorAll('button')].find(button => button.textContent.trim() === 'Save mirror');
+  const save = [...content.querySelectorAll('.ws-mirrorform button')].find(button => button.textContent.trim() === 'Save mirror');
   assert.ok(save, 'save mirror action renders');
   save.click();
   await desk.flush();
@@ -149,7 +319,7 @@ test('wallet notifications open Solscan and select the followed wallet', async (
   desk.window.view.notifications = [{ id: 'n2', at: Date.now(), kind: 'wallet', title: 'Whale moved', body: '1 new transaction', read: false, wallet: followed.address, signature: 'sig', url: 'https://solscan.io/tx/sig' }];
   desk.window.AuroraWorkspace.open(true);
   await desk.flush();
-  desk.tab('watch').click();
+  desk.tab('alerts').click();
   await desk.flush(8);
   const external = [...desk.document.querySelectorAll('#ws-content button')].find(button => button.getAttribute('aria-label') === 'Open transaction');
   assert.ok(external, 'transaction link renders');
@@ -359,10 +529,55 @@ test('People tab shows tracked roles and scan actions', async () => {
   desk.tab('people').click();
   await desk.flush(4);
   const content = desk.document.getElementById('ws-content');
+  const addPerson = [...content.querySelectorAll('button')].find(button => button.textContent.trim() === 'Add person');
+  assert.ok(addPerson, 'add person action renders');
+  addPerson.click();
+  await desk.flush();
   assert.match(content.textContent, /Track a wallet/);
   assert.match(content.textContent, /Alpha KOL/);
   assert.match(content.textContent, /KOL/);
   assert.ok([...content.querySelectorAll('button')].some(button => button.getAttribute('aria-label') === 'Scan wallet'));
+  assert.match(content.textContent, /on radar/);
+  const watch = [...content.querySelectorAll('button')].find(button => button.getAttribute('aria-label') === 'Pause radar');
+  assert.ok(watch, 'activity watcher toggle renders');
+  watch.click();
+  await desk.flush(6);
+  assert.ok((desk.calls.walletPeopleWatch || 0) >= 1, 'activity toggle calls the watcher IPC');
+  const starters = [...content.querySelectorAll('button')].find(button => button.textContent.trim() === 'Starter pack');
+  assert.ok(starters, 'starter pack button renders');
+  starters.click();
+  await desk.flush(6);
+  assert.ok((desk.calls.walletRadarStarter || 0) >= 1, 'starter pack loads through IPC');
+});
+
+test('People search and source filters narrow the directory', async () => {
+  const manual = {
+    id: 'p1', address: '9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM', label: 'Alpha KOL', kind: 'kol', tags: ['kol'], note: 'manual pick', addedAt: Date.now(), scanAt: Date.now(), launches: [], stats: { launches: 0, completed: 0, lastLaunchAt: 0 }, scan: { at: Date.now(), total: 500, holdings: [], unpriced: [], recent: [] }
+  };
+  const starter = {
+    id: 'p2', address: 'CFzVktB6sfK8rpewZeJ5VRPcvG5BBtK6pSbZ7FHVze4V', label: 'Axiom One', kind: 'trader', tags: ['starter', 'axiom'], note: 'starter pack', source: 'axiom', sourceRank: 1, starter: true, addedAt: Date.now(), scanAt: 0, launches: [], stats: { launches: 0, completed: 0, lastLaunchAt: 0 }, scan: null
+  };
+  const desk = createDesk({ wallet: walletFixture({ people: [manual, starter] }) });
+  desk.window.AuroraWorkspace.open(true);
+  await desk.flush();
+  desk.tab('people').click();
+  await desk.flush(4);
+  const content = desk.document.getElementById('ws-content');
+  assert.equal(content.querySelectorAll('.ws-people-list .ws-item').length, 2);
+  const search = content.querySelector('.ws-people-search');
+  search.value = 'Axiom One';
+  search.dispatchEvent(new desk.window.Event('input', { bubbles: true }));
+  await desk.flush(2);
+  assert.equal(content.querySelectorAll('.ws-people-list .ws-item').length, 1);
+  assert.match(content.textContent, /Axiom One/);
+  search.value = '';
+  search.dispatchEvent(new desk.window.Event('input', { bubbles: true }));
+  const source = content.querySelector('.ws-people-source');
+  source.value = 'axiom';
+  source.dispatchEvent(new desk.window.Event('change', { bubbles: true }));
+  await desk.flush(2);
+  assert.equal(content.querySelectorAll('.ws-people-list .ws-item').length, 1);
+  assert.match(content.textContent, /Showing 1 of 2/);
 });
 
 test('People wallet graph links wallets by shared holdings', async () => {

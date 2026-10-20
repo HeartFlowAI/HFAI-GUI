@@ -23,7 +23,7 @@
     document.querySelectorAll('#wallet-dialog [data-wallet-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.walletMode === cfg.mode)));
     document.querySelectorAll('#wallet-dialog [data-wallet-exec]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.walletExec === (cfg.execution || 'paper'))));
     const st = state();
-    el('wallet-status').textContent = st?.error ? st.error : st?.watching ? (st.loading ? 'Reading your wallet…' : `Updated ${st.updated ? new Date(st.updated).toLocaleTimeString() : ''}`) : 'Read-only. Aurora never holds your keys.';
+    el('wallet-status').textContent = st?.error ? st.error : st?.watching ? (st.loading ? 'Reading your wallet…' : `Updated ${st.updated ? new Date(st.updated).toLocaleTimeString() : ''}`) : 'Read-only for watched wallets. Bot wallets stay encrypted on this device.';
     if (el('wallet-wc-project')) {
       el('wallet-wc-project').value = cfg.wcProjectId || '';
       const connected = wallet()?.wc?.connected === true;
@@ -37,6 +37,12 @@
       el('wallet-vault-list').replaceChildren();
       if (!bots.length) { const empty = document.createElement('p'); empty.className = 'field-help'; empty.textContent = 'No bot wallets yet.'; el('wallet-vault-list').append(empty); }
       for (const bot of bots) { const chip = document.createElement('div'); chip.className = 'wallet-chip'; const text = document.createElement('span'); text.textContent = `${bot.label} · ${bot.publicKey.slice(0, 6)}…${bot.publicKey.slice(-6)}`; text.title = bot.publicKey; const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'wallet-chip-remove'; remove.textContent = '×'; remove.setAttribute('aria-label', 'Remove this bot wallet'); remove.onclick = action(async () => { render(await call(window.aurora.walletVaultRemove(bot.id))); renderSettings(); }); chip.append(text, remove); el('wallet-vault-list').append(chip); }
+      if (el('wallet-vault-live')) {
+        const select = el('wallet-vault-live'); select.replaceChildren(); const connected = document.createElement('option'); connected.value = ''; connected.textContent = 'Connected WalletConnect wallet'; select.append(connected);
+        for (const bot of bots) { const option = document.createElement('option'); option.value = bot.id; option.textContent = `${bot.label} · ${bot.publicKey.slice(0, 6)}…${bot.publicKey.slice(-6)}`; select.append(option); }
+        select.value = bots.some(bot => bot.id === cfg.vaultWalletId) ? cfg.vaultWalletId : '';
+        select.onchange = action(async () => { render(await call(window.aurora.walletConfig({ vaultWalletId: select.value }))); renderSettings(); });
+      }
     }
   }
 

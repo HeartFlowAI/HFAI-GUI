@@ -7,7 +7,7 @@ const B = '51yZyDSnec4xnUv7XLRVYcDyV4x3wUtzrDcRaYbmQU5j';
 
 test('people normalize roles, tags, scans and duplicates', () => {
   const list = people.normalizePeople([
-    { address: A, label: 'Alpha', kind: 'KOL', tags: 'kol, ai, kol', scan: { at: 1, total: 50, holdings: [] } },
+    { address: A, label: 'Alpha', kind: 'KOL', tags: 'kol, ai, kol', scan: { at: 1, total: 50, holdings: [] }, watchActivity: false, lastSignature: 'sig', lastActivityAt: 123 },
     { address: A, label: 'Duplicate' },
     { address: 'not-a-wallet', label: 'Bad' },
     { address: B, kind: 'smart money' }
@@ -16,6 +16,9 @@ test('people normalize roles, tags, scans and duplicates', () => {
   assert.equal(list[0].label, 'Alpha');
   assert.equal(list[0].kind, 'kol');
   assert.deepEqual(list[0].tags, ['kol', 'ai']);
+  assert.equal(list[0].watchActivity, false);
+  assert.equal(list[0].lastSignature, 'sig');
+  assert.equal(list[0].lastActivityAt, 123);
   assert.equal(list[1].kind, 'other');
 });
 
@@ -32,6 +35,10 @@ test('upsertPerson keeps identity, scan and launch history', () => {
   assert.equal(next[0].note, 'updated');
   assert.equal(next[0].scan.total, 10);
   assert.equal(next[0].launches[0].symbol, 'OLD');
+  const paused = people.upsertPerson(next, { address: A, watchActivity: false });
+  assert.equal(paused[0].watchActivity, false);
+  assert.equal(paused[0].label, 'Launch dev');
+  assert.equal(paused[0].kind, 'kol');
 });
 
 test('mergeLaunch updates completion and caps launches', () => {
@@ -66,4 +73,6 @@ test('people and token intel tools route through the tool context', async () => 
   assert.equal(added.role, 'kol');
   const listed = await executeTool('wallet_people', {}, { signal, walletPeople: async () => [{ address: A }] });
   assert.equal(listed.length, 1);
+  const watched = await executeTool('wallet_people_watch', { address: A, enabled: 'false' }, { signal, walletPeopleWatch: async (address, enabled) => ({ address, enabled }) });
+  assert.equal(watched.enabled, 'false');
 });

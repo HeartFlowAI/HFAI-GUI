@@ -1,0 +1,1565 @@
+{
+  "asOf": "2026-10-20",
+  "people": [
+    {
+      "address": "CFzVktB6sfK8rpewZeJ5VRPcvG5BBtK6pSbZ7FHVze4V",
+      "label": "moonlobsterdisc",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 1,
+      "pnlUsd": 9520000.0,
+      "winRate": 31.9,
+      "note": "Axiom 30D leaderboard \u00b7 $9.52M realized PnL \u00b7 31.9% win rate \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://www.solanatracker.io/wallet/CFzVktB6sfK8rpewZeJ5VRPcvG5BBtK6pSbZ7FHVze4V",
+      "watchActivity": true
+    },
+    {
+      "address": "2w3nD9VdShyo1zTuoajtgQKKSRMQNPSHxHPwDwfB5Q3c",
+      "label": "Axiom #2",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 2,
+      "pnlUsd": 9410000.0,
+      "winRate": 99.2,
+      "note": "Axiom 30D leaderboard \u00b7 $9.41M realized PnL \u00b7 99.2% win rate \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://www.solanatracker.io/wallet/2w3nD9VdShyo1zTuoajtgQKKSRMQNPSHxHPwDwfB5Q3c",
+      "watchActivity": true
+    },
+    {
+      "address": "5K3N1vqmdgPNfk79SXJdmdhbR2q5KvcunZiWd6D7iTUT",
+      "label": "Axiom #3",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 3,
+      "pnlUsd": 3460000.0,
+      "winRate": 55.4,
+      "note": "Axiom 30D leaderboard \u00b7 $3.46M realized PnL \u00b7 55.4% win rate \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://www.solanatracker.io/wallet/5K3N1vqmdgPNfk79SXJdmdhbR2q5KvcunZiWd6D7iTUT",
+      "watchActivity": true
+    },
+    {
+      "address": "8nWknr26TkhggbisUmhW7RNzp3qTaMVxjVoBRrptqPvt",
+      "label": "Axiom #4",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 4,
+      "pnlUsd": 3030000.0,
+      "winRate": 43.1,
+      "note": "Axiom 30D leaderboard \u00b7 $3.03M realized PnL \u00b7 43.1% win rate \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://www.solanatracker.io/wallet/8nWknr26TkhggbisUmhW7RNzp3qTaMVxjVoBRrptqPvt",
+      "watchActivity": true
+    },
+    {
+      "address": "E4FPggw9yDp9PNJDuRoLYDr6a5HKCsAterw3fygLpZEA",
+      "label": "Axiom #5",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 5,
+      "pnlUsd": 2760000.0,
+      "winRate": 92.1,
+      "note": "Axiom 30D leaderboard \u00b7 $2.76M realized PnL \u00b7 92.1% win rate \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://www.solanatracker.io/wallet/E4FPggw9yDp9PNJDuRoLYDr6a5HKCsAterw3fygLpZEA",
+      "watchActivity": true
+    },
+    {
+      "address": "3mo5chCT28tnEfMTZ9FSx7uXRyCbKCkZL4mevLZd4xGT",
+      "label": "Axiom #6",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 6,
+      "pnlUsd": 2750000.0,
+      "winRate": 33.3,
+      "note": "Axiom 30D leaderboard \u00b7 $2.75M realized PnL \u00b7 33.3% win rate \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://www.solanatracker.io/wallet/3mo5chCT28tnEfMTZ9FSx7uXRyCbKCkZL4mevLZd4xGT",
+      "watchActivity": true
+    },
+    {
+      "address": "6edmJH81ANjK3PvM3yQ4d2cQKsGBBX4vYHe7S9ViXwH1",
+      "label": "Axiom #7",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 7,
+      "pnlUsd": 1250000.0,
+      "winRate": 38.5,
+      "note": "Axiom 30D leaderboard \u00b7 $1.25M realized PnL \u00b7 38.5% win rate \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://www.solanatracker.io/wallet/6edmJH81ANjK3PvM3yQ4d2cQKsGBBX4vYHe7S9ViXwH1",
+      "watchActivity": true
+    },
+    {
+      "address": "dtrzJPj7yDdvm6eRqBAgxsK2sMJeD9HhBEBB3XMedXy",
+      "label": "Axiom #8",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 8,
+      "pnlUsd": 1180000.0,
+      "winRate": 61.4,
+      "note": "Axiom 30D leaderboard \u00b7 $1.18M realized PnL \u00b7 61.4% win rate \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://www.solanatracker.io/wallet/dtrzJPj7yDdvm6eRqBAgxsK2sMJeD9HhBEBB3XMedXy",
+      "watchActivity": true
+    },
+    {
+      "address": "2pSSSc7ZBtrxZJHSKyfQ2EsMQw1Yk3HCPuxmmsaVXtM3",
+      "label": "Axiom #9",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 9,
+      "pnlUsd": 1140000.0,
+      "winRate": 75.5,
+      "note": "Axiom 30D leaderboard \u00b7 $1.14M realized PnL \u00b7 75.5% win rate \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://www.solanatracker.io/wallet/2pSSSc7ZBtrxZJHSKyfQ2EsMQw1Yk3HCPuxmmsaVXtM3",
+      "watchActivity": true
+    },
+    {
+      "address": "7ZV54HcwtzRhZSEPskT8ox5hn9yNocK9xpe4BQXoziaP",
+      "label": "Axiom #10",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 10,
+      "pnlUsd": 1090000.0,
+      "winRate": 60.5,
+      "note": "Axiom 30D leaderboard \u00b7 $1.09M realized PnL \u00b7 60.5% win rate \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://www.solanatracker.io/wallet/7ZV54HcwtzRhZSEPskT8ox5hn9yNocK9xpe4BQXoziaP",
+      "watchActivity": true
+    },
+    {
+      "address": "9DY29nBppd7QNy6r8jSTPpLrNpJXjtj9T8AHKee8Pfgt",
+      "label": "Axiom #11",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 11,
+      "pnlUsd": 1070000.0,
+      "winRate": 21.4,
+      "note": "Axiom 30D leaderboard \u00b7 $1.07M realized PnL \u00b7 21.4% win rate \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://www.solanatracker.io/wallet/9DY29nBppd7QNy6r8jSTPpLrNpJXjtj9T8AHKee8Pfgt",
+      "watchActivity": false
+    },
+    {
+      "address": "6o6xhXjNiBWVURLWCS8unMWhpqRBimTRyipmFBDNDcsD",
+      "label": "Axiom #12",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 12,
+      "pnlUsd": 1060000.0,
+      "winRate": 39.8,
+      "note": "Axiom 30D leaderboard \u00b7 $1.06M realized PnL \u00b7 39.8% win rate \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://www.solanatracker.io/wallet/6o6xhXjNiBWVURLWCS8unMWhpqRBimTRyipmFBDNDcsD",
+      "watchActivity": false
+    },
+    {
+      "address": "BxScXNAGhGPnbwyqiArZhHtrVKMDbaijDJRS1DUoAQvJ",
+      "label": "Axiom #13",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 13,
+      "pnlUsd": 974860.0,
+      "winRate": 39.3,
+      "note": "Axiom 30D leaderboard \u00b7 $974.86K realized PnL \u00b7 39.3% win rate \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://www.solanatracker.io/wallet/BxScXNAGhGPnbwyqiArZhHtrVKMDbaijDJRS1DUoAQvJ",
+      "watchActivity": false
+    },
+    {
+      "address": "5yZ34VpnEsZiEBrfKWu3HMAqGjN56LxwBYTsB72HHSpf",
+      "label": "Axiom #14",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 14,
+      "pnlUsd": 956250.0,
+      "winRate": 43.8,
+      "note": "Axiom 30D leaderboard \u00b7 $956.25K realized PnL \u00b7 43.8% win rate \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://www.solanatracker.io/wallet/5yZ34VpnEsZiEBrfKWu3HMAqGjN56LxwBYTsB72HHSpf",
+      "watchActivity": false
+    },
+    {
+      "address": "5FqUo9aBjsp7QeeyN6Vi2ZmF2fjS4H5EU7wnAQwPy17z",
+      "label": "Axiom #15",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 15,
+      "pnlUsd": 949600.0,
+      "winRate": 79.8,
+      "note": "Axiom 30D leaderboard \u00b7 $949.60K realized PnL \u00b7 79.8% win rate \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://www.solanatracker.io/wallet/5FqUo9aBjsp7QeeyN6Vi2ZmF2fjS4H5EU7wnAQwPy17z",
+      "watchActivity": false
+    },
+    {
+      "address": "AV7PjXHL5JXZ1YoYRoN9Dsstg1x2UciBupMCXcJP8gUz",
+      "label": "Axiom #16",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 16,
+      "pnlUsd": 943930.0,
+      "winRate": 74.0,
+      "note": "Axiom 30D leaderboard \u00b7 $943.93K realized PnL \u00b7 74.0% win rate \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://www.solanatracker.io/wallet/AV7PjXHL5JXZ1YoYRoN9Dsstg1x2UciBupMCXcJP8gUz",
+      "watchActivity": false
+    },
+    {
+      "address": "GpTXmkdvrTajqkzX1fBmC4BUjSboF9dHgfnqPqj8WAc4",
+      "label": "Axiom #17",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 17,
+      "pnlUsd": 873080.0,
+      "winRate": 89.9,
+      "note": "Axiom 30D leaderboard \u00b7 $873.08K realized PnL \u00b7 89.9% win rate \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://www.solanatracker.io/wallet/GpTXmkdvrTajqkzX1fBmC4BUjSboF9dHgfnqPqj8WAc4",
+      "watchActivity": false
+    },
+    {
+      "address": "CyaE1VxvBrahnPWkqm5VsdCvyS2QmNht2UFrKJHga54o",
+      "label": "Cented",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 18,
+      "pnlUsd": 797880.0,
+      "winRate": 60.8,
+      "note": "Axiom 30D leaderboard \u00b7 $797.88K realized PnL \u00b7 60.8% win rate \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://www.solanatracker.io/wallet/CyaE1VxvBrahnPWkqm5VsdCvyS2QmNht2UFrKJHga54o",
+      "watchActivity": false
+    },
+    {
+      "address": "CExcag5qZpF1fowaMwJbi8LVXsdbNRigTynSvn7T6d7X",
+      "label": "Axiom #19",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 19,
+      "pnlUsd": 712950.0,
+      "winRate": 25.0,
+      "note": "Axiom 30D leaderboard \u00b7 $712.95K realized PnL \u00b7 25.0% win rate \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://www.solanatracker.io/wallet/CExcag5qZpF1fowaMwJbi8LVXsdbNRigTynSvn7T6d7X",
+      "watchActivity": false
+    },
+    {
+      "address": "CnTeYCBA7Hzj9r2s99SaEXKYpiWixtMUkqZWHwyNbm3g",
+      "label": "Axiom #20",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 20,
+      "pnlUsd": 695560.0,
+      "winRate": 53.0,
+      "note": "Axiom 30D leaderboard \u00b7 $695.56K realized PnL \u00b7 53.0% win rate \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://www.solanatracker.io/wallet/CnTeYCBA7Hzj9r2s99SaEXKYpiWixtMUkqZWHwyNbm3g",
+      "watchActivity": false
+    },
+    {
+      "address": "9A1trXUK2FSCk51Mvj4WGP8EEuoQPxpHmLZudx51R52g",
+      "label": "Axiom #21",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 21,
+      "pnlUsd": 672970.0,
+      "winRate": 69.4,
+      "note": "Axiom 30D leaderboard \u00b7 $672.97K realized PnL \u00b7 69.4% win rate \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://www.solanatracker.io/wallet/9A1trXUK2FSCk51Mvj4WGP8EEuoQPxpHmLZudx51R52g",
+      "watchActivity": false
+    },
+    {
+      "address": "6wT8MSKLiXS26aZR1hTCE69MNGw3C6WRZmvdTtWmpHL8",
+      "label": "Axiom #22",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 22,
+      "pnlUsd": 658260.0,
+      "winRate": 82.0,
+      "note": "Axiom 30D leaderboard \u00b7 $658.26K realized PnL \u00b7 82.0% win rate \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://www.solanatracker.io/wallet/6wT8MSKLiXS26aZR1hTCE69MNGw3C6WRZmvdTtWmpHL8",
+      "watchActivity": false
+    },
+    {
+      "address": "7F174sHx92EkhWrFhGY9XiWMw3RHmFW81tAbFrfF18FX",
+      "label": "Axiom #23",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 23,
+      "pnlUsd": 626960.0,
+      "winRate": 41.1,
+      "note": "Axiom 30D leaderboard \u00b7 $626.96K realized PnL \u00b7 41.1% win rate \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://www.solanatracker.io/wallet/7F174sHx92EkhWrFhGY9XiWMw3RHmFW81tAbFrfF18FX",
+      "watchActivity": false
+    },
+    {
+      "address": "EBx24uAPtaS1SvHwRhKEktSgzaXdiVEyHuSVpAMVwrcD",
+      "label": "Axiom #24",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 24,
+      "pnlUsd": 614060.0,
+      "winRate": 76.8,
+      "note": "Axiom 30D leaderboard \u00b7 $614.06K realized PnL \u00b7 76.8% win rate \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://www.solanatracker.io/wallet/EBx24uAPtaS1SvHwRhKEktSgzaXdiVEyHuSVpAMVwrcD",
+      "watchActivity": false
+    },
+    {
+      "address": "D9gQ6RhKEpnobPBUdWY5bPQt2p3zGk3iVz6ChpUi2ArA",
+      "label": "Axiom #25",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 25,
+      "pnlUsd": 599250.0,
+      "winRate": 88.2,
+      "note": "Axiom 30D leaderboard \u00b7 $599.25K realized PnL \u00b7 88.2% win rate \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://www.solanatracker.io/wallet/D9gQ6RhKEpnobPBUdWY5bPQt2p3zGk3iVz6ChpUi2ArA",
+      "watchActivity": false
+    },
+    {
+      "address": "4BHBSZA96XCaepYLvmteV6wLqKTqJPyfkME941X5PqHP",
+      "label": "Axiom #26",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 26,
+      "pnlUsd": 570490.0,
+      "winRate": 82.2,
+      "note": "Axiom 30D leaderboard \u00b7 $570.49K realized PnL \u00b7 82.2% win rate \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://www.solanatracker.io/wallet/4BHBSZA96XCaepYLvmteV6wLqKTqJPyfkME941X5PqHP",
+      "watchActivity": false
+    },
+    {
+      "address": "JDQKDrc1TQgBRvdFh56tkta5sYcDj1SoP52Eiu64rSrT",
+      "label": "ephraimschindle",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 27,
+      "pnlUsd": 566480.0,
+      "winRate": 95.1,
+      "note": "Axiom 30D leaderboard \u00b7 $566.48K realized PnL \u00b7 95.1% win rate \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://www.solanatracker.io/wallet/JDQKDrc1TQgBRvdFh56tkta5sYcDj1SoP52Eiu64rSrT",
+      "watchActivity": false
+    },
+    {
+      "address": "4vw54BmAogeRV3vPKWyFet5yf8DTLcREzdSzx4rw9Ud9",
+      "label": "Decu",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 28,
+      "pnlUsd": 561100.0,
+      "winRate": 59.4,
+      "note": "Axiom 30D leaderboard \u00b7 $561.10K realized PnL \u00b7 59.4% win rate \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://www.solanatracker.io/wallet/4vw54BmAogeRV3vPKWyFet5yf8DTLcREzdSzx4rw9Ud9",
+      "watchActivity": false
+    },
+    {
+      "address": "DC99qH3jXiq5pPWQd6PjjJcCxTV593s58CLPxWGpEywt",
+      "label": "Axiom #29",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 29,
+      "pnlUsd": 549960.0,
+      "winRate": 67.2,
+      "note": "Axiom 30D leaderboard \u00b7 $549.96K realized PnL \u00b7 67.2% win rate \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://www.solanatracker.io/wallet/DC99qH3jXiq5pPWQd6PjjJcCxTV593s58CLPxWGpEywt",
+      "watchActivity": false
+    },
+    {
+      "address": "6nU2L7MQVUWjtdKHVpuZA9aind73nd3rXC4YFo8KQCy4",
+      "label": "Axiom #30",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "axiom",
+        "top-pnl"
+      ],
+      "source": "axiom",
+      "sourceRank": 30,
+      "pnlUsd": 549470.0,
+      "winRate": 57.6,
+      "note": "Axiom 30D leaderboard \u00b7 $549.47K realized PnL \u00b7 57.6% win rate \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://www.solanatracker.io/wallet/6nU2L7MQVUWjtdKHVpuZA9aind73nd3rXC4YFo8KQCy4",
+      "watchActivity": false
+    },
+    {
+      "address": "EwJYY4q2rcrdEH26doRbYX9JxbpYPSNZvRLgzhPKi418",
+      "label": "heat",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 1,
+      "pnlUsd": 418193.9739713232,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #1 \u00b7 $418.2K PnL \u00b7 89.6% ROI \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://pump.fun/profile/EwJYY4q2rcrdEH26doRbYX9JxbpYPSNZvRLgzhPKi418",
+      "watchActivity": true
+    },
+    {
+      "address": "9BMzTpSo4URse1oN666pmexhdjpU1vA5p7LtroCFQdLU",
+      "label": "Aurelius",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 2,
+      "pnlUsd": 404883.2893528992,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #2 \u00b7 $404.9K PnL \u00b7 34.4% ROI \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://pump.fun/profile/9BMzTpSo4URse1oN666pmexhdjpU1vA5p7LtroCFQdLU",
+      "watchActivity": true
+    },
+    {
+      "address": "6vbrTLsWy76TxDQAUKLqZrPohQuq6EVaJgfGzR82paFa",
+      "label": "marcell",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 3,
+      "pnlUsd": 235277.04889292334,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #3 \u00b7 $235.3K PnL \u00b7 29.1% ROI \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://pump.fun/profile/6vbrTLsWy76TxDQAUKLqZrPohQuq6EVaJgfGzR82paFa",
+      "watchActivity": true
+    },
+    {
+      "address": "2QrfK8gf3vBcFfuaCJbFxGk3w1JxwjamGE9aGwdQHFas",
+      "label": "Thokani",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 4,
+      "pnlUsd": 120288.79600317976,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #4 \u00b7 $120.3K PnL \u00b7 50.9% ROI \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://pump.fun/profile/2QrfK8gf3vBcFfuaCJbFxGk3w1JxwjamGE9aGwdQHFas",
+      "watchActivity": true
+    },
+    {
+      "address": "29yFzeBZgxf5zqrAkKXwgZtQehRf4pL8WbV2nRJikbw8",
+      "label": "throatycrab1008",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 5,
+      "pnlUsd": 98918.16804367995,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #5 \u00b7 $98.9K PnL \u00b7 15469.1% ROI \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://pump.fun/profile/29yFzeBZgxf5zqrAkKXwgZtQehRf4pL8WbV2nRJikbw8",
+      "watchActivity": true
+    },
+    {
+      "address": "3bzaJd5yZG73EVDz8xosQb7gfZm2LN5auFGh6wnP1n1f",
+      "label": "MattFws",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 6,
+      "pnlUsd": 98049.27019770279,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #6 \u00b7 $98.0K PnL \u00b7 448.3% ROI \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://pump.fun/profile/3bzaJd5yZG73EVDz8xosQb7gfZm2LN5auFGh6wnP1n1f",
+      "watchActivity": true
+    },
+    {
+      "address": "DoKEEjQmd6CUK7RWKnCVDdZCa4776fYhLGDNPJrf8qVN",
+      "label": "winternomicstv",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 7,
+      "pnlUsd": 72332.40095569617,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #7 \u00b7 $72.3K PnL \u00b7 45.3% ROI \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://pump.fun/profile/DoKEEjQmd6CUK7RWKnCVDdZCa4776fYhLGDNPJrf8qVN",
+      "watchActivity": true
+    },
+    {
+      "address": "HYBFJdtHNxBKmbuoKRJJyNexafsjzeg7r1LfurcwUBkX",
+      "label": "DarkCliffSpeech",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 8,
+      "pnlUsd": 71643.74196459509,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #8 \u00b7 $71.6K PnL \u00b7 36.4% ROI \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://pump.fun/profile/HYBFJdtHNxBKmbuoKRJJyNexafsjzeg7r1LfurcwUBkX",
+      "watchActivity": true
+    },
+    {
+      "address": "4Bc4Ue2G37zoQCiksAvwMgXQQJFKcYQThnoHPKizAmWB",
+      "label": "vvvvvvvvvv1",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 9,
+      "pnlUsd": 71542.68532066012,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #9 \u00b7 $71.5K PnL \u00b7 1567.9% ROI \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://pump.fun/profile/4Bc4Ue2G37zoQCiksAvwMgXQQJFKcYQThnoHPKizAmWB",
+      "watchActivity": true
+    },
+    {
+      "address": "HB3GebzspXg5PBpeqewkjHPxugf4Uhx8xdZWGPC9q5ks",
+      "label": "snacky14",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 10,
+      "pnlUsd": 61748.88701872154,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #10 \u00b7 $61.7K PnL \u00b7 459.7% ROI \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://pump.fun/profile/HB3GebzspXg5PBpeqewkjHPxugf4Uhx8xdZWGPC9q5ks",
+      "watchActivity": true
+    },
+    {
+      "address": "A71r4j8B1LeW84DgGrg1fx9V1djf5Qvn73Ve2YrpbfxT",
+      "label": "reubs",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 11,
+      "pnlUsd": 59191.535100401765,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #11 \u00b7 $59.2K PnL \u00b7 54.3% ROI \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://pump.fun/profile/A71r4j8B1LeW84DgGrg1fx9V1djf5Qvn73Ve2YrpbfxT",
+      "watchActivity": false
+    },
+    {
+      "address": "BSWzqnWrir5s54Fa94GEwBi1CSAR1q6Nio9JGsPGFcy1",
+      "label": "gtsby",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 12,
+      "pnlUsd": 54938.897305276616,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #12 \u00b7 $54.9K PnL \u00b7 439.1% ROI \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://pump.fun/profile/BSWzqnWrir5s54Fa94GEwBi1CSAR1q6Nio9JGsPGFcy1",
+      "watchActivity": false
+    },
+    {
+      "address": "GeUnv1jmtviRbR7Gu1JnXSGkUMUgFVBHuEVQVpTaUX1W",
+      "label": "Gladey",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 13,
+      "pnlUsd": 54029.606652576935,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #13 \u00b7 $54.0K PnL \u00b7 10476.0% ROI \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://pump.fun/profile/GeUnv1jmtviRbR7Gu1JnXSGkUMUgFVBHuEVQVpTaUX1W",
+      "watchActivity": false
+    },
+    {
+      "address": "6mrqa4cDaqBCD9UrUiUyoK78e4AJ8XzRaF8uTbcuTVae",
+      "label": "cousin",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 14,
+      "pnlUsd": 52269.2039833127,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #14 \u00b7 $52.3K PnL \u00b7 98.0% ROI \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://pump.fun/profile/6mrqa4cDaqBCD9UrUiUyoK78e4AJ8XzRaF8uTbcuTVae",
+      "watchActivity": false
+    },
+    {
+      "address": "91p7G7unBy2s4wHgnh1dercAtaRphh6HX6oCyc41xGLb",
+      "label": "alphatunainters",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 15,
+      "pnlUsd": 50361.95179733087,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #15 \u00b7 $50.4K PnL \u00b7 185.8% ROI \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://pump.fun/profile/91p7G7unBy2s4wHgnh1dercAtaRphh6HX6oCyc41xGLb",
+      "watchActivity": false
+    },
+    {
+      "address": "215nhcAHjQQGgwpQSJQ7zR26etbjjtVdW74NLzwEgQjP",
+      "label": "ogantd",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 16,
+      "pnlUsd": 49040.1090625241,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #16 \u00b7 $49.0K PnL \u00b7 12.7% ROI \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://pump.fun/profile/215nhcAHjQQGgwpQSJQ7zR26etbjjtVdW74NLzwEgQjP",
+      "watchActivity": false
+    },
+    {
+      "address": "8Ltv5royXzxVG3tAhVhRnfXrzapS5Dwqt1ocxprgu6YP",
+      "label": "blu7k",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 17,
+      "pnlUsd": 48663.459798189135,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #17 \u00b7 $48.7K PnL \u00b7 2344.9% ROI \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://pump.fun/profile/8Ltv5royXzxVG3tAhVhRnfXrzapS5Dwqt1ocxprgu6YP",
+      "watchActivity": false
+    },
+    {
+      "address": "7NnaXghjuU92gM9kmwXysqa5HboyZuR2LTaBnvazFxSH",
+      "label": "pavlotrading",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 18,
+      "pnlUsd": 48654.21322111542,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #18 \u00b7 $48.7K PnL \u00b7 310.8% ROI \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://pump.fun/profile/7NnaXghjuU92gM9kmwXysqa5HboyZuR2LTaBnvazFxSH",
+      "watchActivity": false
+    },
+    {
+      "address": "BqhAPgnScqDUP9f7fFuqrZn8WRznduGT7VvPzbUjHnT7",
+      "label": "NRv_",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 19,
+      "pnlUsd": 47613.3501741429,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #19 \u00b7 $47.6K PnL \u00b7 19.2% ROI \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://pump.fun/profile/BqhAPgnScqDUP9f7fFuqrZn8WRznduGT7VvPzbUjHnT7",
+      "watchActivity": false
+    },
+    {
+      "address": "3VUNtVtjjx5ckUojT7UocJ5fbuAJRsNUXNfTBnPte9vC",
+      "label": "buddhaaaaa",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 20,
+      "pnlUsd": 45716.771403731356,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #20 \u00b7 $45.7K PnL \u00b7 1730.1% ROI \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://pump.fun/profile/3VUNtVtjjx5ckUojT7UocJ5fbuAJRsNUXNfTBnPte9vC",
+      "watchActivity": false
+    },
+    {
+      "address": "2M2vLX34LXMg24dMEnjWHvRXS1tshpEDRWzmXgV8ENNZ",
+      "label": "SossaDotKek",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 21,
+      "pnlUsd": 45046.91249504093,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #21 \u00b7 $45.0K PnL \u00b7 3.9% ROI \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://pump.fun/profile/2M2vLX34LXMg24dMEnjWHvRXS1tshpEDRWzmXgV8ENNZ",
+      "watchActivity": false
+    },
+    {
+      "address": "7mbMSWrK9H3SmdDKPMJ7232QWdrp7TgJ2GLD6pCRiSFt",
+      "label": "ZK_proof",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 22,
+      "pnlUsd": 44574.71117884656,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #22 \u00b7 $44.6K PnL \u00b7 87.4% ROI \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://pump.fun/profile/7mbMSWrK9H3SmdDKPMJ7232QWdrp7TgJ2GLD6pCRiSFt",
+      "watchActivity": false
+    },
+    {
+      "address": "ArkdCAPErAo6KdVDTFA32YKnqaD7jfXsESFoyxQzDgnu",
+      "label": "normalseal38782",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 23,
+      "pnlUsd": 40641.57627995571,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #23 \u00b7 $40.6K PnL \u00b7 10821.9% ROI \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://pump.fun/profile/ArkdCAPErAo6KdVDTFA32YKnqaD7jfXsESFoyxQzDgnu",
+      "watchActivity": false
+    },
+    {
+      "address": "EATmaY5h2szFxGi5BsNZpzrVaQ4iYaDNDV7YBeEo57aP",
+      "label": "AscendedTrader",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 24,
+      "pnlUsd": 40499.78481209715,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #24 \u00b7 $40.5K PnL \u00b7 687.0% ROI \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://pump.fun/profile/EATmaY5h2szFxGi5BsNZpzrVaQ4iYaDNDV7YBeEo57aP",
+      "watchActivity": false
+    },
+    {
+      "address": "2X4H5Y9C4Fy6Pf3wpq8Q4gMvLcWvfrrwDv2bdR8AAwQv",
+      "label": "orange",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 25,
+      "pnlUsd": 39160.38327006159,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #25 \u00b7 $39.2K PnL \u00b7 49.5% ROI \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://pump.fun/profile/2X4H5Y9C4Fy6Pf3wpq8Q4gMvLcWvfrrwDv2bdR8AAwQv",
+      "watchActivity": false
+    },
+    {
+      "address": "F9zT1F46HAoPanR4NC1Yw7TyP8Z9tCavTe48mrzK7aN4",
+      "label": "BraveSmallCub",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 26,
+      "pnlUsd": 38920.68374977492,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #26 \u00b7 $38.9K PnL \u00b7 1391.3% ROI \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://pump.fun/profile/F9zT1F46HAoPanR4NC1Yw7TyP8Z9tCavTe48mrzK7aN4",
+      "watchActivity": false
+    },
+    {
+      "address": "95ddWCEqs7bX1vAPFXgAxNKmYkCvpQFiurCk4KWg2AST",
+      "label": "olddolphin41264",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 28,
+      "pnlUsd": 37507.85449807393,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #28 \u00b7 $37.5K PnL \u00b7 159.9% ROI \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://pump.fun/profile/95ddWCEqs7bX1vAPFXgAxNKmYkCvpQFiurCk4KWg2AST",
+      "watchActivity": false
+    },
+    {
+      "address": "ardinRsN1mNYVeoJWTBsWeYeXvuR9UUDGMsCDKpb6AT",
+      "label": "trunoest",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 29,
+      "pnlUsd": 36341.34921800803,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #29 \u00b7 $36.3K PnL \u00b7 5217.7% ROI \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://pump.fun/profile/ardinRsN1mNYVeoJWTBsWeYeXvuR9UUDGMsCDKpb6AT",
+      "watchActivity": false
+    },
+    {
+      "address": "EVqxB3F6iUBeWsTpBFQqWwxpqUS8s4NrzgxBvQ2VRbTq",
+      "label": "faposhi__",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 30,
+      "pnlUsd": 34655.98477556588,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #30 \u00b7 $34.7K PnL \u00b7 5.5% ROI \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://pump.fun/profile/EVqxB3F6iUBeWsTpBFQqWwxpqUS8s4NrzgxBvQ2VRbTq",
+      "watchActivity": false
+    },
+    {
+      "address": "82JkzsyLnaS7V8qipcNuyX7UGw949mwgrLaK12Wt55Bn",
+      "label": "jiggy",
+      "kind": "trader",
+      "tags": [
+        "starter",
+        "pumpfun",
+        "padre",
+        "top-pnl"
+      ],
+      "source": "pumpfun-padre",
+      "sourceRank": 31,
+      "pnlUsd": 33613.06190614763,
+      "winRate": 0,
+      "note": "Pump.fun / Padre 7D leaderboard \u00b7 #31 \u00b7 $33.6K PnL \u00b7 135.9% ROI \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://pump.fun/profile/82JkzsyLnaS7V8qipcNuyX7UGw949mwgrLaK12Wt55Bn",
+      "watchActivity": false
+    },
+    {
+      "address": "BQVz7fQ1WsQmSTMY3umdPEPPTm1sdcBcX9sP7o6kPRmB",
+      "label": "Limfork.eth",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 1,
+      "pnlUsd": 0,
+      "winRate": 50.9,
+      "note": "Kolscan leaderboard \u00b7 1033.1 SOL profit \u00b7 50.9% win rate \u00b7 @Limfork \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://kolscan.io/account/BQVz7fQ1WsQmSTMY3umdPEPPTm1sdcBcX9sP7o6kPRmB",
+      "watchActivity": true
+    },
+    {
+      "address": "78N177fzNJpp8pG49xDv1efYcTMSzo9tPTKEA9mAVkh2",
+      "label": "Sheep",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 2,
+      "pnlUsd": 0,
+      "winRate": 55.1,
+      "note": "Kolscan leaderboard \u00b7 809.1 SOL profit \u00b7 55.1% win rate \u00b7 @imsheepsol \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://kolscan.io/account/78N177fzNJpp8pG49xDv1efYcTMSzo9tPTKEA9mAVkh2",
+      "watchActivity": true
+    },
+    {
+      "address": "4Be9CvxqHW6BYiRAxW9Q3xu1ycTMWaL5z8NX4HR3ha7t",
+      "label": "Mitch",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 3,
+      "pnlUsd": 0,
+      "winRate": 37.2,
+      "note": "Kolscan leaderboard \u00b7 647.3 SOL profit \u00b7 37.2% win rate \u00b7 @idrawline \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://kolscan.io/account/4Be9CvxqHW6BYiRAxW9Q3xu1ycTMWaL5z8NX4HR3ha7t",
+      "watchActivity": true
+    },
+    {
+      "address": "4DdrfiDHpmx55i4SPssxVzS9ZaKLb8qr45NKY9Er9nNh",
+      "label": "Mr. Frog",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 4,
+      "pnlUsd": 0,
+      "winRate": 84.7,
+      "note": "Kolscan leaderboard \u00b7 585.7 SOL profit \u00b7 84.7% win rate \u00b7 @TheMisterFrog \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://kolscan.io/account/4DdrfiDHpmx55i4SPssxVzS9ZaKLb8qr45NKY9Er9nNh",
+      "watchActivity": true
+    },
+    {
+      "address": "G6fUXjMKPJzCY1rveAE6Qm7wy5U3vZgKDJmN1VPAdiZC",
+      "label": "clukz",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 5,
+      "pnlUsd": 0,
+      "winRate": 48.5,
+      "note": "Kolscan leaderboard \u00b7 495.5 SOL profit \u00b7 48.5% win rate \u00b7 @clukzSOL \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://kolscan.io/account/G6fUXjMKPJzCY1rveAE6Qm7wy5U3vZgKDJmN1VPAdiZC",
+      "watchActivity": true
+    },
+    {
+      "address": "8AtQ4ka3dgtrH1z4Uq3Tm4YdMN3cK5RRj1eKuGNnvenm",
+      "label": "peacefuldestroy",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 6,
+      "pnlUsd": 0,
+      "winRate": 20.7,
+      "note": "Kolscan leaderboard \u00b7 364.3 SOL profit \u00b7 20.7% win rate \u00b7 @peacefuldestroy \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://kolscan.io/account/8AtQ4ka3dgtrH1z4Uq3Tm4YdMN3cK5RRj1eKuGNnvenm",
+      "watchActivity": true
+    },
+    {
+      "address": "5YRgrP3mjGzrzirYYN5HAQH19cTYREYwGxW6XRJQUzij",
+      "label": "slingoor",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 7,
+      "pnlUsd": 0,
+      "winRate": 26.5,
+      "note": "Kolscan leaderboard \u00b7 304.2 SOL profit \u00b7 26.5% win rate \u00b7 @slingoorio \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://kolscan.io/account/5YRgrP3mjGzrzirYYN5HAQH19cTYREYwGxW6XRJQUzij",
+      "watchActivity": true
+    },
+    {
+      "address": "H31vEBxSJk1nQdUN11qZgZyhScyShhscKhvhZZU3dQoU",
+      "label": "Megga",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 8,
+      "pnlUsd": 0,
+      "winRate": 34.0,
+      "note": "Kolscan leaderboard \u00b7 300.0 SOL profit \u00b7 34.0% win rate \u00b7 @Megga \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://kolscan.io/account/H31vEBxSJk1nQdUN11qZgZyhScyShhscKhvhZZU3dQoU",
+      "watchActivity": true
+    },
+    {
+      "address": "EeXvxkcGqMDZeTaVeawzxm9mbzZwqDUMmfG3bF7uzumH",
+      "label": "milito",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 9,
+      "pnlUsd": 0,
+      "winRate": 39.4,
+      "note": "Kolscan leaderboard \u00b7 286.8 SOL profit \u00b7 39.4% win rate \u00b7 @fnmilito \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://kolscan.io/account/EeXvxkcGqMDZeTaVeawzxm9mbzZwqDUMmfG3bF7uzumH",
+      "watchActivity": true
+    },
+    {
+      "address": "5B79fMkcFeRTiwm7ehsZsFiKsC7m7n1Bgv9yLxPp9q2X",
+      "label": "bandit",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 10,
+      "pnlUsd": 0,
+      "winRate": 30.1,
+      "note": "Kolscan leaderboard \u00b7 272.6 SOL profit \u00b7 30.1% win rate \u00b7 @bandeez \u00b7 snapshot 2026-10-20",
+      "profileUrl": "https://kolscan.io/account/5B79fMkcFeRTiwm7ehsZsFiKsC7m7n1Bgv9yLxPp9q2X",
+      "watchActivity": true
+    },
+    {
+      "address": "FsG3BaPmRTdSrPaivbgJsFNCCa8cPfkUtk8VLWXkHpHP",
+      "label": "Reljoo",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 11,
+      "pnlUsd": 0,
+      "winRate": 28.6,
+      "note": "Kolscan leaderboard \u00b7 263.4 SOL profit \u00b7 28.6% win rate \u00b7 @Reljoooo \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://kolscan.io/account/FsG3BaPmRTdSrPaivbgJsFNCCa8cPfkUtk8VLWXkHpHP",
+      "watchActivity": false
+    },
+    {
+      "address": "DYAn4XpAkN5mhiXkRB7dGq4Jadnx6XYgu8L5b3WGhbrt",
+      "label": "The Doc",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 12,
+      "pnlUsd": 0,
+      "winRate": 41.9,
+      "note": "Kolscan leaderboard \u00b7 261.3 SOL profit \u00b7 41.9% win rate \u00b7 @KayTheDoc \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://kolscan.io/account/DYAn4XpAkN5mhiXkRB7dGq4Jadnx6XYgu8L5b3WGhbrt",
+      "watchActivity": false
+    },
+    {
+      "address": "CXnf4Tt7qFz3KZNwn3Yve5MKaRyxGoAy2eDX3QT8e99m",
+      "label": "trav",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 13,
+      "pnlUsd": 0,
+      "winRate": 15.2,
+      "note": "Kolscan leaderboard \u00b7 241.5 SOL profit \u00b7 15.2% win rate \u00b7 @travonsol \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://kolscan.io/account/CXnf4Tt7qFz3KZNwn3Yve5MKaRyxGoAy2eDX3QT8e99m",
+      "watchActivity": false
+    },
+    {
+      "address": "8nqtxpFpuXwfXG4pBLsDkkuMMPK9FjSkBMCn542HiM3v",
+      "label": "dov 7",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 14,
+      "pnlUsd": 0,
+      "winRate": 48.5,
+      "note": "Kolscan leaderboard \u00b7 228.7 SOL profit \u00b7 48.5% win rate \u00b7 @dovvvv7 \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://kolscan.io/account/8nqtxpFpuXwfXG4pBLsDkkuMMPK9FjSkBMCn542HiM3v",
+      "watchActivity": false
+    },
+    {
+      "address": "8oQoMhfBQnRspn7QtNAq2aPThRE4q94kLSTwaaFQvRgs",
+      "label": "big bags bobby",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 15,
+      "pnlUsd": 0,
+      "winRate": 33.3,
+      "note": "Kolscan leaderboard \u00b7 211.2 SOL profit \u00b7 33.3% win rate \u00b7 @bigbagsbobby \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://kolscan.io/account/8oQoMhfBQnRspn7QtNAq2aPThRE4q94kLSTwaaFQvRgs",
+      "watchActivity": false
+    },
+    {
+      "address": "2JptG7VJTuohCNrEE2iVT43UtjTNqRTVMsgNs8xeotbC",
+      "label": "Hako",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 16,
+      "pnlUsd": 0,
+      "winRate": 40.4,
+      "note": "Kolscan leaderboard \u00b7 165.9 SOL profit \u00b7 40.4% win rate \u00b7 @hako99x \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://kolscan.io/account/2JptG7VJTuohCNrEE2iVT43UtjTNqRTVMsgNs8xeotbC",
+      "watchActivity": false
+    },
+    {
+      "address": "91sP85Ds9A4EXJ3gU3iHyLtUNJimxz8LrxRb2qhBNod9",
+      "label": "hood",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 17,
+      "pnlUsd": 0,
+      "winRate": 48.6,
+      "note": "Kolscan leaderboard \u00b7 152.9 SOL profit \u00b7 48.6% win rate \u00b7 @hoodscall \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://kolscan.io/account/91sP85Ds9A4EXJ3gU3iHyLtUNJimxz8LrxRb2qhBNod9",
+      "watchActivity": false
+    },
+    {
+      "address": "95TWoKkvv2z85EXBzd2z6NwbxH2f54AvwuCA9x3NoKep",
+      "label": "Killua",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 18,
+      "pnlUsd": 0,
+      "winRate": 20.5,
+      "note": "Kolscan leaderboard \u00b7 142.2 SOL profit \u00b7 20.5% win rate \u00b7 @cryptokillua99 \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://kolscan.io/account/95TWoKkvv2z85EXBzd2z6NwbxH2f54AvwuCA9x3NoKep",
+      "watchActivity": false
+    },
+    {
+      "address": "FAicXNV5FVqtfbpn4Zccs71XcfGeyxBSGbqLDyDJZjke",
+      "label": "radiance",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 19,
+      "pnlUsd": 0,
+      "winRate": 36.6,
+      "note": "Kolscan leaderboard \u00b7 129.0 SOL profit \u00b7 36.6% win rate \u00b7 @radiancebrr \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://kolscan.io/account/FAicXNV5FVqtfbpn4Zccs71XcfGeyxBSGbqLDyDJZjke",
+      "watchActivity": false
+    },
+    {
+      "address": "Dvbv5TdAyPpJk16X9mUxWFVicYtCUxTLhuof8TGuUaRv",
+      "label": "CookDoc",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 20,
+      "pnlUsd": 0,
+      "winRate": 76.2,
+      "note": "Kolscan leaderboard \u00b7 129.0 SOL profit \u00b7 76.2% win rate \u00b7 @CookDoc1993 \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://kolscan.io/account/Dvbv5TdAyPpJk16X9mUxWFVicYtCUxTLhuof8TGuUaRv",
+      "watchActivity": false
+    },
+    {
+      "address": "39q2g5tTQn9n7KnuapzwS2smSx3NGYqBoea11tBjsGEt",
+      "label": "Walta",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 21,
+      "pnlUsd": 0,
+      "winRate": 0.0,
+      "note": "Kolscan leaderboard \u00b7 127.1 SOL profit \u00b7 0.0% win rate \u00b7 @Walta61 \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://kolscan.io/account/39q2g5tTQn9n7KnuapzwS2smSx3NGYqBoea11tBjsGEt",
+      "watchActivity": false
+    },
+    {
+      "address": "CgaA9a1JwAXJyfHuvZ7VW8YfTVRkdiT5mjBBSKcg7Rz5",
+      "label": "Art",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 22,
+      "pnlUsd": 0,
+      "winRate": 42.5,
+      "note": "Kolscan leaderboard \u00b7 107.8 SOL profit \u00b7 42.5% win rate \u00b7 @ArtCryptoz \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://kolscan.io/account/CgaA9a1JwAXJyfHuvZ7VW8YfTVRkdiT5mjBBSKcg7Rz5",
+      "watchActivity": false
+    },
+    {
+      "address": "J9TYAsWWidbrcZybmLSfrLzryANf4CgJBLdvwdGuC8MB",
+      "label": "Johnson",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 23,
+      "pnlUsd": 0,
+      "winRate": 81.8,
+      "note": "Kolscan leaderboard \u00b7 97.9 SOL profit \u00b7 81.8% win rate \u00b7 @johnsoncooks101 \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://kolscan.io/account/J9TYAsWWidbrcZybmLSfrLzryANf4CgJBLdvwdGuC8MB",
+      "watchActivity": false
+    },
+    {
+      "address": "EjtQrPTbcMevStBkpnjsH23NfUCMhGHusTYsHuGVQZp2",
+      "label": "Zef",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 24,
+      "pnlUsd": 0,
+      "winRate": 37.2,
+      "note": "Kolscan leaderboard \u00b7 95.4 SOL profit \u00b7 37.2% win rate \u00b7 @zefwashere \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://kolscan.io/account/EjtQrPTbcMevStBkpnjsH23NfUCMhGHusTYsHuGVQZp2",
+      "watchActivity": false
+    },
+    {
+      "address": "EqiFgyNw6kgrmYstWyrP8VjKhka7XEmKTZzHSmwpr1Zb",
+      "label": "ban",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 25,
+      "pnlUsd": 0,
+      "winRate": 44.6,
+      "note": "Kolscan leaderboard \u00b7 85.5 SOL profit \u00b7 44.6% win rate \u00b7 @Ban_Val \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://kolscan.io/account/EqiFgyNw6kgrmYstWyrP8VjKhka7XEmKTZzHSmwpr1Zb",
+      "watchActivity": false
+    },
+    {
+      "address": "Be24Gbf5KisDk1LcWWZsBn8dvB816By7YzYF5zWZnRR6",
+      "label": "Chairman \u00b2",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 26,
+      "pnlUsd": 0,
+      "winRate": 73.7,
+      "note": "Kolscan leaderboard \u00b7 84.2 SOL profit \u00b7 73.7% win rate \u00b7 @Chairman_DN \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://kolscan.io/account/Be24Gbf5KisDk1LcWWZsBn8dvB816By7YzYF5zWZnRR6",
+      "watchActivity": false
+    },
+    {
+      "address": "FqamE7xrahg7FEWoByrx1o8SeyHt44rpmE6ZQfT7zrve",
+      "label": "EustazZ",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 27,
+      "pnlUsd": 0,
+      "winRate": 54.0,
+      "note": "Kolscan leaderboard \u00b7 79.4 SOL profit \u00b7 54.0% win rate \u00b7 @Eustazzeus \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://kolscan.io/account/FqamE7xrahg7FEWoByrx1o8SeyHt44rpmE6ZQfT7zrve",
+      "watchActivity": false
+    },
+    {
+      "address": "AuPp4YTMTyqxYXQnHc5KUc6pUuCSsHQpBJhgnD45yqrf",
+      "label": "Dani",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 29,
+      "pnlUsd": 0,
+      "winRate": 57.7,
+      "note": "Kolscan leaderboard \u00b7 72.4 SOL profit \u00b7 57.7% win rate \u00b7 @DaniWorldwide \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://kolscan.io/account/AuPp4YTMTyqxYXQnHc5KUc6pUuCSsHQpBJhgnD45yqrf",
+      "watchActivity": false
+    },
+    {
+      "address": "ApRnQN2HkbCn7W2WWiT2FEKvuKJp9LugRyAE1a9Hdz1",
+      "label": "S",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 30,
+      "pnlUsd": 0,
+      "winRate": 52.2,
+      "note": "Kolscan leaderboard \u00b7 62.1 SOL profit \u00b7 52.2% win rate \u00b7 @runitbackghost \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://kolscan.io/account/ApRnQN2HkbCn7W2WWiT2FEKvuKJp9LugRyAE1a9Hdz1",
+      "watchActivity": false
+    },
+    {
+      "address": "9cdZg6xR4c9kZiqKSzqjn4QHCXNQuC9HEWBzzMJ3mzqw",
+      "label": "Pikalosi",
+      "kind": "kol",
+      "tags": [
+        "starter",
+        "kolscan",
+        "twitter"
+      ],
+      "source": "kolscan",
+      "sourceRank": 31,
+      "pnlUsd": 0,
+      "winRate": 53.1,
+      "note": "Kolscan leaderboard \u00b7 60.1 SOL profit \u00b7 53.1% win rate \u00b7 @pikalosi \u00b7 snapshot 2026-10-20 \u00b7 preloaded, Radar paused",
+      "profileUrl": "https://kolscan.io/account/9cdZg6xR4c9kZiqKSzqjn4QHCXNQuC9HEWBzzMJ3mzqw",
+      "watchActivity": false
+    }
+  ]
+}

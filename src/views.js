@@ -3,7 +3,7 @@ const { randomUUID } = require('node:crypto');
 // Typed view specs. Gigi (or the user) composes these and the desk overlay
 // renders them. Pure validation so both the main process and the UI agree.
 const TYPES = ['line', 'area', 'bar', 'table', 'metrics', 'thesis', 'holders', 'list', 'note'];
-const KINDS = ['series', 'pair', 'holdings', 'research', 'holders', 'static'];
+const KINDS = ['series', 'pair', 'holdings', 'research', 'holders', 'portfolio', 'static'];
 const LAYOUTS = ['full', 'half', 'third'];
 
 function normalizeView(input) {

@@ -50,6 +50,17 @@ function normalizePerson(input) {
     scanAt: number(input.scanAt),
     scan: follow.normalizeScan(input.scan),
     launches: normalizeLaunches(input.launches),
+    watchActivity: input.watchActivity !== false,
+    activityAt: number(input.activityAt),
+    lastSignature: text(input.lastSignature, 160),
+    lastActivityAt: number(input.lastActivityAt),
+    activityError: text(input.activityError, 300),
+    source: text(input.source, 24),
+    sourceRank: number(input.sourceRank),
+    pnlUsd: number(input.pnlUsd),
+    winRate: number(input.winRate),
+    profileUrl: typeof input.profileUrl === 'string' && /^https:\/\//.test(input.profileUrl) ? input.profileUrl.slice(0, 300) : '',
+    starter: input.starter === true,
     lastError: text(input.lastError, 300)
   };
 }
@@ -71,16 +82,11 @@ function upsertPerson(people, value) {
   const index = list.findIndex(item => item.address === person.address);
   if (index >= 0) {
     const current = list[index];
-    list[index] = normalizePerson({
-      ...current,
-      ...person,
-      id: current.id,
-      addedAt: current.addedAt,
-      scan: current.scan,
-      scanAt: current.scanAt,
-      launches: current.launches,
-      lastError: current.lastError
-    });
+    const patch = {};
+    for (const key of ['label', 'kind', 'tags', 'note', 'scan', 'scanAt', 'launches', 'watchActivity', 'activityAt', 'lastSignature', 'lastActivityAt', 'activityError', 'source', 'sourceRank', 'pnlUsd', 'winRate', 'profileUrl', 'starter', 'lastError']) {
+      if (value[key] !== undefined) patch[key] = value[key];
+    }
+    list[index] = normalizePerson({ ...current, ...patch, id: current.id, addedAt: current.addedAt });
   } else {
     list.unshift(person);
   }
@@ -115,6 +121,8 @@ async function scanPerson(person, options = {}) {
   const scan = await follow.scanWallet(person.address, options);
   person.scan = follow.normalizeScan(scan);
   person.scanAt = scan.at || Date.now();
+  if (!person.lastSignature && scan.recent?.[0]?.signature) person.lastSignature = scan.recent[0].signature;
+  if (scan.lastActive) person.lastActivityAt = Math.max(Number(person.lastActivityAt) || 0, Number(scan.lastActive) || 0);
   person.lastError = '';
   return person;
 }

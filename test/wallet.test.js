@@ -148,6 +148,11 @@ test('portfolioSeries reports coverage and the request range uses its Binance in
   manager.dispose();
 });
 
+test('live auto is opt-in and defaults off', () => {
+  assert.equal(normalizeConfig({}).liveAutoEnabled, false);
+  assert.equal(normalizeConfig({ liveAutoEnabled: true }).liveAutoEnabled, true);
+});
+
 test('a paper-buy signal fires onSignal with the rule and live quote', async () => {
   const config = normalizeConfig({ watchlist: [WATCH], signals: [{ id: 'sig1', name: 'Dip', mint: WATCH, condition: { metric: 'price', op: 'above', value: 0.5 }, action: 'paper-buy', usd: 50, cooldownSec: 0 }] });
   const fired = [];

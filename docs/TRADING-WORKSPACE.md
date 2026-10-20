@@ -32,7 +32,7 @@ purpose, per the plan.
 - **Gigi auto scan and auto paper.** Optional periodic scanning of the current
   Pump.fun stage with strict JSON verdicts, plus paper-only autotrade bounded by
   budget, max buys, cooldown, cash and limits. Settings persist and scanning
-  resumes when the Pump.fun surface opens. Live auto trading is disabled.
+  resumes when the Pump.fun surface opens. Live strategy auto is off by default and requires an explicit switch in Strategies plus a live signer.
 - **Underlying stock history.** xStocks Trade has Stock and On-chain chart modes.
   Stock candles come from Yahoo Finance with range-aware intervals and caching.
   The panel adds previous close, 52-week high and low, and day range.
@@ -90,14 +90,18 @@ errors, and keeps a live count and progress bar in Wallets.
   code, so nothing arbitrary runs. Cadence comes from Automations.
 - **Live (C18/C19).** Preview a real Jupiter swap (quote plus simulation, nothing
   signed), then execute behind a confirmation that shows the decoded amounts,
-  minimum out and price impact. Swaps sign through WalletConnect (Aurora never
-  holds the signing key), are recorded with signature and status, and are
-  reconciled. Live strategies raise intents through the same policy path.
+  minimum out and price impact. Swaps sign through WalletConnect or a selected
+  local bot wallet, are recorded with signature and status, and are reconciled.
+  Multi-signer transactions still require WalletConnect. The live confirmation
+  shows signer type, SOL balance, RPC health, route, minimum out, price impact and
+  simulation before anything is signed. Live strategies raise intents through the
+  same policy path.
 - **Pause/exit (C20).** RUNNING, PAUSED_FLAT and PAUSED_WITH_EXPOSURE, with an
   interrupted exit reconciling on the next launch and asking for confirmation.
-- **Vault (C17, partial).** Generate a dedicated ed25519 Solana wallet per bot,
-  or import an existing key. Secrets are encrypted with the OS keystore and never
-  reach models, build code, logs or the renderer.
+- **Vault (C17).** Generate a dedicated ed25519 Solana wallet per bot, or import
+  an existing key. Secrets are encrypted with the OS keystore and never reach
+  models, build code, logs or the renderer. Select a bot as the live signing
+  wallet and it signs single-signer Jupiter and PumpPortal transactions locally.
 
 ## Coverage and limits
 
@@ -109,12 +113,13 @@ errors, and keeps a live count and progress bar in Wallets.
 - Candles use Binance for majors and GeckoTerminal pool OHLCV for long-tail and
   pump.fun tokens (bonding curve and migrated pools). Local samples remain the
   last-resort line series.
-- Safety covers mint and freeze authority only. Liquidity locks, holder
-  clustering and developer history are not implemented.
+- Safety covers mint and freeze authority only. Holder clustering is available
+  as a shared-holding graph, not a funding graph. Developer history is observed
+  locally and is not a complete on-chain index.
 - Live trades are mainnet and move real funds. Aggregate limits are enforced for
   paper; live entries should use per-trade approval (`each` mode).
-- The vault stores keys but does not yet sign transactions; live execution signs
-  through the connected external wallet.
+- The vault signs single-signer transactions locally. Multi-signer transactions
+  and vault export/restore are not implemented; use WalletConnect for those.
 
 ## Setup
 
@@ -138,7 +143,7 @@ errors, and keeps a live count and progress bar in Wallets.
 
 ## Unresolved defects and gaps
 
-- Vault signing, export and restore are not implemented (C17 remainder).
+- Vault export/restore and multi-signer signing are not implemented (C17 remainder).
 - macOS signing and notarization are not configured; builds are unsigned (C21).
 - Login and local profiles are not implemented; the harness is a single profile
   (C07).
