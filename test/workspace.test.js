@@ -62,7 +62,10 @@ test('wallets section renders followed wallets, a scan summary and actions', asy
   assert.match(content.textContent, /Wallets · 1/);
   assert.match(content.textContent, /Top-10 coverage/);
   assert.match(content.textContent, /BONK/);
-  const add = [...content.querySelectorAll('button')].find(button => button.textContent.trim() === 'Add wallet');
+  assert.equal(content.querySelectorAll('.ws-wallet-hero .ws-wallet-fact').length, 3, 'three wallet facts render');
+  assert.ok(content.querySelector('.ws-position'), 'holdings render as position rows');
+  assert.equal(content.querySelector('.ws-wallet-tabs').getAttribute('role'), 'tablist', 'wallet tabs are a segmented tablist');
+  const add = [...content.querySelectorAll('button')].find(button => button.getAttribute('aria-label') === 'Add wallet');
   assert.ok(add, 'add wallet action renders');
   add.click();
   await desk.flush();
@@ -142,8 +145,9 @@ test('Tutorial opens on every section and switches languages', async () => {
   desk.tab('strategies').click();
   await desk.flush(4);
   const content = desk.document.getElementById('ws-content');
-  const tutorial = [...content.querySelectorAll('.ws-tutorial-btn')].find(button => /Tutorial|Guida|Guide|Anleitung|Обучение/.test(button.textContent));
+  const tutorial = content.querySelector('.ws-tutorial-btn');
   assert.ok(tutorial, 'tutorial button renders in section header');
+  assert.match(tutorial.getAttribute('aria-label'), /Tutorial|Guida|Guide|Anleitung|Обучение/);
   tutorial.click();
   await desk.flush(2);
   const modal = desk.document.getElementById('ws-tutorial');

@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.6.9.1 — Heartflow Aurora (2026-10-21)
+
+A focused polish release for the crypto desk.
+
+### Wallets
+
+- Added a wallet identity header with avatar, address, tags and scan status.
+- Replaced the five-stat strip with a three-fact overview: priced value, priced positions and top-10 coverage.
+- Turned holdings and top positions into modern rows with token marks, allocation bars, value/change and hover actions.
+- Replaced underlined tabs with a segmented tab bar.
+- Rebuilt Automation as three cards: activity alerts, copy to paper and auto-mirror, with proper switches.
+- Rebuilt Notes as a two-card thesis and Ask Gigi layout.
+- Reduced Wallets header actions and moved Add wallet into the wallet rail.
+- Made Tutorial a compact icon action instead of a text button.
+
+### People
+
+- Added avatar-led person rows with role, source, rank, Radar status, holdings and value.
+- Reduced each row to Scan plus an overflow menu for pause, research, Solscan and remove.
+- Rebuilt the add-person form as a clean two-column layout.
+- Improved Radar count wording and removed the redundant header badge.
+- Kept the shared-holding wallet graph while allowing row menus to overflow the panel.
+
+### UI
+
+- Applied a consistent desk-wide button treatment: softer surfaces, one clear primary style and quieter secondary actions.
+
 ## 0.6.9 — Heartflow Aurora (2026-10-20)
 
 This release rolls up everything built since 0.6.7. It makes the crypto desk easier to enter and leave, rebuilds Wallets and Alerts, adds Radar starter packs, redesigns Strategies and Signals, adds multilingual tutorials, cleans up Capabilities, makes Pump.fun resilient to rate limits, and adds local vault signing plus a live-auto safety policy.

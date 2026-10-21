@@ -223,9 +223,17 @@
   }
   function syncTutorialButtons() {
     for (const button of ws.querySelectorAll('.ws-tutorial-btn')) {
-      const label = button.querySelector('span');
-      if (label) label.textContent = tutorialLabel(); else button.textContent = tutorialLabel();
+      const label = tutorialLabel();
+      const text = button.querySelector('span:not(.hf-ico)');
+      if (text) text.textContent = label;
+      button.setAttribute('aria-label', label);
+      button.dataset.tip = label;
     }
+  }
+  function tutorialButton() {
+    const button = ibtn('help', tutorialLabel(), () => openTutorial());
+    button.classList.add('ws-tutorial-btn');
+    return button;
   }
   function renderTutorial() {
     const key = TUTORIALS.sections[tutorialKey] ? tutorialKey : 'wallets';
@@ -268,13 +276,29 @@
     ws.querySelector('#ws-tutorial-close').focus();
   }
   function closeTutorial() { tutorial.hidden = true; }
-  function head(root, title, sub, actions) { const h = mk('div', 'ws-head'); const left = mk('div'); left.append(mk('h1', 'ws-h1', title), mk('p', 'ws-sub', sub)); h.append(left); const a = mk('div', 'ws-head-actions'); const guide = btn(tutorialLabel(), { sm: true, variant: 'ghost' }, () => openTutorial()); guide.classList.add('ws-tutorial-btn'); a.append(guide); if (actions) a.append(...actions); h.append(a); root.append(h); }
+  function head(root, title, sub, actions) { const h = mk('div', 'ws-head'); const left = mk('div'); left.append(mk('h1', 'ws-h1', title), mk('p', 'ws-sub', sub)); h.append(left); const a = mk('div', 'ws-head-actions'); a.append(tutorialButton()); if (actions) a.append(...actions); h.append(a); root.append(h); }
   const metric = (label, value, cls) => { const c = mk('div', 'ws-stat'); c.append(mk('small', '', label)); const b = mk('b', '', value); if (cls) b.className = cls; c.append(b); return c; };
   function listItem(name, sub, value, change, controls, badge) { const item = mk('div', 'ws-item'); const left = mk('div'); left.append(mk('strong', '', name)); if (sub) left.append(mk('small', '', sub)); const right = mk('div', 'ws-ctrls'); if (change !== undefined && change !== null) right.append(mk('small', change >= 0 ? 'hf-up' : 'hf-down', `${change >= 0 ? '+' : ''}${Number(change).toFixed(2)}%`)); if (value !== undefined) right.append(mk('strong', '', value)); if (badge) right.append(badge); if (controls) right.append(controls); item.append(left, right); return item; }
   function field(label, type, options) { const d = mk('div', 'hf-field'); d.append(mk('label', '', label)); if (type === 'select') { const s = mk('select', 'hf-input'); for (const o of options) s.append(mk('option', '', o)); d.append(s); } else { const i = mk('input', 'hf-input'); i.type = type; i.step = 'any'; if (/buy/i.test(label)) i.value = '25'; d.append(i); } return d; }
   const inputOf = d => d.querySelector('input')?.value; const selectOf = d => d.querySelector('select')?.value;
   function checkField(label) { const d = mk('div', 'hf-field ws-check'); const i = mk('input'); i.type = 'checkbox'; d.append(mk('label', '', label), i); return d; }
   const checkedOf = d => !!d.querySelector('input')?.checked;
+  function switchField(label, checked, onChange) {
+    const wrap = mk('label', 'ws-switch');
+    const input = mk('input'); input.type = 'checkbox'; input.checked = checked === true;
+    if (onChange) input.onchange = onChange;
+    wrap.append(input, mk('span', 'ws-switch-track'), mk('span', 'ws-switch-label', label));
+    return wrap;
+  }
+  function autoCard(iconName, title, description) {
+    const card = mk('div', 'ws-auto-card');
+    const header = mk('div', 'ws-auto-card-head');
+    const ico = mk('span', 'ws-auto-icon'); ico.append(ic(iconName, 15));
+    const text = mk('div'); text.append(mk('strong', '', title), mk('small', '', description));
+    header.append(ico, text);
+    card.append(header);
+    return card;
+  }
 
   // ---- alerts ----
   function alertRow(a, s) { const ct = mk('div', 'ws-ctrls'); ct.append(ibtn('delete', 'Remove alert', run(async () => call2(window.aurora.walletAlertRemove(a.id))))); return listItem(`${sym(a.mint, s)} ${a.direction} ${money(a.price)}`, a.triggeredAt ? `fired ${new Date(a.triggeredAt).toLocaleString()}` : 'watching', undefined, undefined, ct, mk('span', `hf-badge${a.triggeredAt ? ' ok' : ' muted'}`, a.triggeredAt ? 'fired' : 'armed')); }
@@ -451,7 +475,9 @@
     const cancel = btn('Cancel', { sm: true, variant: 'ghost' }, () => { copyOpen = ''; draw(); });
     const form = mk('div', 'ws-form ws-copyform'); form.append(budget, mode, count);
     const actions = mk('div', 'ws-form-actions'); actions.append(cancel, copy); form.append(actions);
-    return panel('Copy to paper', {}, mk('p', 'ws-sub', `Paper only. Buys the top scanned holdings with up to ${money(paper()?.cash)} of paper cash, including the simulated fee. Stablecoins are skipped.`), form);
+    const wrap = mk('div', 'ws-copyform-wrap');
+    wrap.append(mk('p', 'ws-auto-note', `Paper only. Buys the top scanned holdings with up to ${money(paper()?.cash)} paper cash, including the simulated fee. Stablecoins are skipped.`), form);
+    return wrap;
   }
   function walletStatus(item) {
     const scan = item.scan || {};
@@ -476,48 +502,61 @@
     if (accounts > positions + 5) parts.push(`${accounts.toLocaleString()} token accounts exist in total, but only ${positions} have a live price; most are likely spam or dust.`);
     return parts.join(' ');
   }
-  function walletInsight(scan) {
-    const box = mk('div', 'ws-wallet-insight');
-    box.append(mk('strong', '', 'What this overview means'), mk('p', '', walletInsightText(scan)));
+  function walletFact(label, value, detail, detailCls) {
+    const fact = mk('div', 'ws-wallet-fact');
+    fact.append(mk('small', '', label), mk('strong', '', value));
+    if (detail) fact.append(mk('span', detailCls || '', detail));
+    return fact;
+  }
+  function walletHero(scan) {
+    const positions = Number(scan.pricedCount) || (scan.holdings || []).length;
+    const accounts = Number(scan.tokenCount) || positions;
+    const coverage = Number(scan.top10Share || 0) * 100;
+    const change = Number(scan.change24h || 0);
+    const hero = mk('div', 'ws-wallet-hero');
+    hero.append(
+      walletFact('Priced value', scan.total >= 1e6 ? `$${compact(scan.total)}` : money(scan.total), `24h ${change >= 0 ? '+' : ''}${change.toFixed(2)}%`, change >= 0 ? 'hf-up' : 'hf-down'),
+      walletFact('Priced positions', String(positions), `${accounts.toLocaleString()} token account${accounts === 1 ? '' : 's'} in total`),
+      walletFact('Top-10 coverage', `${coverage.toFixed(1)}%`, walletCoverageLabel(coverage))
+    );
+    return hero;
+  }
+  function walletBrief(scan) {
+    const box = mk('div', 'ws-wallet-brief');
+    box.append(mk('p', '', walletInsightText(scan)));
+    if (scan.lastActive) box.append(mk('small', '', `Last on-chain activity ${new Date(scan.lastActive).toLocaleString()}.`));
     return box;
   }
-  function walletStat(label, value, title, cls) {
-    const cell = metric(label, value, cls);
-    if (title) cell.title = title;
-    return cell;
-  }
-  function walletStatbar(scan) {
-    const positions = Number(scan.pricedCount) || (scan.holdings || []).length;
-    const stats = mk('div', 'ws-statbar');
-    stats.append(
-      walletStat('Priced value', scan.total >= 1e6 ? `$${compact(scan.total)}` : money(scan.total), 'Value of priced holdings only. Unpriced spam tokens are excluded.'),
-      walletStat('24h', `${(scan.change24h || 0) >= 0 ? '+' : ''}${(scan.change24h || 0).toFixed(2)}%`, 'Change in the wallet value Aurora tracks, not realized PnL.', (scan.change24h || 0) >= 0 ? 'hf-up' : 'hf-down'),
-      walletStat('SOL', scan.sol >= 1e6 ? compact(scan.sol) : amount(scan.sol), 'Native SOL balance.'),
-      walletStat('Positions', String(positions), `${Number(scan.tokenCount) || positions} token accounts in total. Only priced positions are counted here.`),
-      walletStat('Top-10 coverage', `${((scan.top10Share || 0) * 100).toFixed(1)}%`, 'Share of priced value in the 10 largest positions. 100% simply means the wallet has 10 or fewer priced positions.')
-    );
-    return stats;
-  }
-  function walletHoldingsTable(scan, limit = 12) {
+  function walletPositionList(scan, limit = 12) {
     const holdings = (scan.holdings || []).slice(0, limit);
     if (!holdings.length) return emptyState('portfolio', 'No priced holdings', 'The wallet holds tokens with no price yet, or the RPC returned nothing.');
-    const table = mk('table', 'hf-table ws-follow-table');
-    const thead = mk('thead'); const htr = mk('tr');
-    for (const [label, n] of [['Token', false], ['Amount', true], ['Value', true], ['24h', true], ['Share', true], ['', false]]) htr.append(mk('th', n ? 'num' : '', label));
-    thead.append(htr); table.append(thead);
-    const tb = mk('tbody');
+    const list = mk('div', 'ws-position-list');
     for (const h of holdings) {
-      const tr = mk('tr'); const td0 = mk('td'); td0.append(mk('span', 'ws-sym', h.symbol), mk('small', 'ws-row-name', h.name || short(h.mint)));
-      const act = mk('td', 'num'); act.append(
-        ibtn('trade', 'Trade', () => { section = 'trade'; selectToken(h.mint); savePrefs(); draw(); }),
-        ibtn('research', 'Research token', run(async () => call2(window.aurora.walletResearchStart({ mint: h.mint, symbol: h.symbol })))),
-        ibtn('watch', 'Watch token', run(async () => { const data = await call2(window.aurora.walletWatchlistAdd(h.mint)); window.toast(`${h.symbol} watched.`); return data; }))
-      );
-      tr.append(td0, mk('td', 'num', amount(h.amount)), mk('td', 'num', money(h.value)), mk('td', `num ${(h.change24h || 0) >= 0 ? 'hf-up' : 'hf-down'}`, `${(h.change24h || 0) >= 0 ? '+' : ''}${(h.change24h || 0).toFixed(2)}%`), mk('td', 'num', `${Math.round((h.share || 0) * 100)}%`), act);
-      tb.append(tr);
+      const share = Math.max(0, Math.min(100, (Number(h.share) || 0) * 100));
+      const change = Number(h.change24h || 0);
+      const row = mk('div', 'ws-position');
+      row.tabIndex = 0;
+      row.setAttribute('role', 'button');
+      row.setAttribute('aria-label', `Trade ${h.symbol}`);
+      const openTrade = () => { section = 'trade'; selectToken(h.mint); savePrefs(); draw(); };
+      row.onclick = openTrade;
+      row.onkeydown = event => { if (event.target !== row) return; if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openTrade(); } };
+      const main = mk('div', 'ws-position-main');
+      main.append(mk('strong', '', h.symbol), mk('small', '', `${h.name || short(h.mint)} · ${amount(h.amount)} ${h.symbol || ''}`.trim()));
+      const value = mk('div', 'ws-position-value');
+      value.append(mk('b', '', money(h.value)), mk('small', change >= 0 ? 'hf-up' : 'hf-down', `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`));
+      const allocation = mk('div', 'ws-position-alloc');
+      const track = mk('span'); const fill = mk('i'); fill.style.width = `${Math.max(share, share > 0 ? 2 : 0)}%`; track.append(fill);
+      allocation.append(track, mk('small', '', `${Math.round(share)}%`));
+      const actions = mk('div', 'ws-position-actions');
+      const act = (iconName, tip, fn) => { const button = ibtn(iconName, tip, event => { event.stopPropagation(); fn(); }); actions.append(button); };
+      act('trade', 'Trade', openTrade);
+      act('research', 'Research token', () => call2(window.aurora.walletResearchStart({ mint: h.mint, symbol: h.symbol })).catch(error => window.toast(error.message)));
+      act('watch', 'Watch token', () => call2(window.aurora.walletWatchlistAdd(h.mint)).then(() => window.toast(`${h.symbol} watched.`)).catch(error => window.toast(error.message)));
+      row.append(pumpLogo(h), main, value, allocation, actions);
+      list.append(row);
     }
-    table.append(tb);
-    const wrap = mk('div', 'ws-table-scroll'); wrap.append(table); return wrap;
+    return list;
   }
   function walletActivityList(scan) {
     const box = mk('div');
@@ -539,21 +578,29 @@
   }
   function walletAutomationBody(item) {
     const box = mk('div');
-    const alerts = checkField('Alert me when this wallet moves');
-    const alertBox = alerts.querySelector('input'); alertBox.checked = item.watchActivity !== false;
-    alertBox.onchange = run(async () => { const data = await call2(window.aurora.walletFollowUpdate({ id: item.id, watchActivity: alertBox.checked })); window.toast(alertBox.checked ? 'Activity alerts on.' : 'Activity alerts off.'); return data; });
-    box.append(panel('Alerts', {}, alerts));
-    if (copyOpen === item.id) box.append(copyForm(item));
+    const grid = mk('div', 'ws-auto-grid');
+
+    const alertCard = autoCard('alert', 'Activity alerts', 'Get a ping when this wallet moves.');
+    const alertSwitch = switchField(item.watchActivity !== false ? 'On' : 'Off', item.watchActivity !== false, run(async () => {
+      const data = await call2(window.aurora.walletFollowUpdate({ id: item.id, watchActivity: alertSwitch.querySelector('input').checked }));
+      window.toast(alertSwitch.querySelector('input').checked ? 'Activity alerts on.' : 'Activity alerts off.');
+      return data;
+    }));
+    alertCard.append(alertSwitch, mk('p', 'ws-auto-note', 'Uses the activity watcher. No parsed history is needed for a ping.'));
+
+    const copyCard = autoCard('paper', 'Copy to paper', 'One-off paper basket from the top scanned holdings.');
+    if (copyOpen === item.id) copyCard.append(copyForm(item));
     else {
-      const copyRow = mk('div', 'ws-wallet-automation-row');
+      const copyRow = mk('div', 'ws-wallet-automation-row ws-auto-action');
       const copyCopy = mk('div');
-      copyCopy.append(mk('strong', '', 'Copy to paper'), mk('small', '', `Buy the top scanned holdings with up to ${money(paper()?.cash)} paper cash.`));
+      copyCopy.append(mk('strong', '', 'Copy holdings'), mk('small', '', `Use up to ${money(paper()?.cash)} of paper cash.`));
       copyRow.append(copyCopy, btn('Copy to paper', { sm: true, variant: 'ghost', icon: 'paper' }, () => { walletTab = 'automation'; copyOpen = item.id; draw(); }));
-      box.append(panel('', {}, copyRow));
+      copyCard.append(copyRow, mk('p', 'ws-auto-note', 'No live orders. Uses the last scan and the current paper cash.'));
     }
-    const mirrorOn = checkField('Auto-mirror new activity into paper');
-    mirrorOn.querySelector('input').checked = item.autoMirror === true;
-    const mirrorBudget = field('Mirror budget (USD)', 'number'); mirrorBudget.querySelector('input').value = String(item.mirrorBudgetUsd || 25);
+
+    const mirrorCard = autoCard('switch', 'Auto-mirror', 'Mirror new activity into paper automatically.');
+    const mirrorOn = switchField('Enabled', item.autoMirror === true);
+    const mirrorBudget = field('Budget per event (USD)', 'number'); mirrorBudget.querySelector('input').value = String(item.mirrorBudgetUsd || 25);
     const mirrorMax = field('Max buys per event', 'select', ['1', '2', '3', '5']);
     mirrorMax.querySelector('select').value = String(item.mirrorMaxBuys || 3);
     const saveMirror = btn('Save mirror', { sm: true, variant: 'primary' }, run(async () => {
@@ -561,33 +608,57 @@
       window.toast(checkedOf(mirrorOn) ? 'Auto-mirror on. First check records a baseline.' : 'Auto-mirror off.');
       return data;
     }));
-    const mirrorForm = mk('div', 'ws-form ws-mirrorform'); mirrorForm.append(mirrorOn, mirrorBudget, mirrorMax);
+    const mirrorForm = mk('div', 'ws-form ws-mirrorform'); mirrorForm.append(mirrorBudget, mirrorMax);
     const mirrorActions = mk('div', 'ws-form-actions'); mirrorActions.append(saveMirror); mirrorForm.append(mirrorActions);
-    box.append(panel('Auto-mirror', {}, mirrorForm, mk('p', 'ws-sub ws-note', 'Paper only. Budget is per activity event and respects paper cash, the daily cap and the position cap. Without Helius, only new buys are mirrored; sells require parsed transfers.')));
-    box.append(mk('p', 'ws-sub ws-note', item.mirrorError || item.mirrorLastResult || 'No mirror run yet. The first activity check records a baseline.'));
-    if (item.activityError) box.append(mk('p', 'ws-sub ws-note', `Activity check: ${item.activityError}`));
-    else if (item.lastActivityAt) box.append(mk('p', 'ws-sub ws-note', `Last on-chain activity ${new Date(item.lastActivityAt).toLocaleString()}.`));
+    mirrorCard.append(mirrorOn, mirrorForm, mk('p', 'ws-auto-note', 'Paper only. Budget is per event and respects paper cash and position caps. Sells need parsed activity.'));
+
+    grid.append(alertCard, copyCard, mirrorCard);
+    box.append(grid);
+
+    const status = mk('div', 'ws-auto-status');
+    if (item.mirrorError) status.append(mk('p', 'ws-sub ws-note', item.mirrorError));
+    else if (item.mirrorLastResult) status.append(mk('p', 'ws-sub ws-note', item.mirrorLastResult));
+    else status.append(mk('p', 'ws-sub ws-note', 'No mirror run yet. The first activity check records a baseline.'));
+    if (item.activityError) status.append(mk('p', 'ws-sub ws-note', `Activity check: ${item.activityError}`));
+    else if (item.lastActivityAt) status.append(mk('p', 'ws-sub ws-note', `Last on-chain activity ${new Date(item.lastActivityAt).toLocaleString()}.`));
+    box.append(status);
     return box;
   }
   function walletNotesBody(item) {
-    const box = mk('div');
-    const note = mk('textarea', 'hf-input'); note.rows = 3; note.value = item.note || ''; note.placeholder = 'Why are you watching this wallet?';
+    const grid = mk('div', 'ws-notes-grid');
+    const noteCard = autoCard('journal', 'Wallet thesis', 'Your own read. Private to this device.');
+    noteCard.classList.add('ws-note-card');
+    const note = mk('textarea', 'hf-input'); note.rows = 5; note.value = item.note || ''; note.placeholder = 'Why are you watching this wallet? What would make you stop?';
     const saveNote = btn('Save note', { sm: true, variant: 'primary' }, run(async () => { const data = await call2(window.aurora.walletFollowUpdate({ id: item.id, label: item.label, tags: item.tags, note: note.value })); window.toast('Note saved.'); return data; }));
-    const noteRow = mk('div', 'ws-follownote'); noteRow.append(note, saveNote); box.append(panel('Wallet note', {}, noteRow));
-    const ask = mk('input', 'hf-input'); ask.type = 'text'; ask.placeholder = 'Ask Gigi about this wallet';
-    const askBtn = btn('Ask', { sm: true, variant: 'ghost', icon: 'chat' }, () => askAboutWallet(item, ask.value));
+    const noteRow = mk('div', 'ws-follownote'); noteRow.append(note, saveNote); noteCard.append(noteRow);
+
+    const askCard = autoCard('chat', 'Ask Gigi', 'Answers use the latest scan and your note.');
+    askCard.classList.add('ws-ask-card');
+    const ask = mk('input', 'hf-input'); ask.type = 'text'; ask.placeholder = 'Ask about this wallet';
+    const askBtn = btn('Ask', { sm: true, variant: 'primary', icon: 'chat' }, () => askAboutWallet(item, ask.value));
     ask.addEventListener('keydown', event => { if (event.key === 'Enter') askBtn.click(); });
     const askRow = mk('div', 'ws-followask ws-wallet-ask'); askRow.append(ask, askBtn);
-    box.append(panel('Ask Gigi', {}, askRow));
-    return box;
+    askCard.append(askRow, mk('p', 'ws-auto-note', 'Read-only. Gigi will not move funds or sign for this wallet.'));
+
+    grid.append(noteCard, askCard);
+    const box = mk('div'); box.append(grid); return box;
   }
   function followDetail(item, s) {
     const scan = item.scan || {};
     const status = walletStatus(item);
     const card = mk('div', 'hf-panel ws-wallet-detail');
     const heading = mk('div', 'ws-wallet-detail-head');
+    const identity = mk('div', 'ws-wallet-identity');
+    const avatar = mk('span', 'ws-wallet-avatar', (item.label || item.address || '?').slice(0, 2).toUpperCase());
+    avatar.style.background = pulseGradient(item.address || item.label);
     const title = mk('div', 'ws-wallet-detail-title');
-    title.append(mk('strong', '', item.label || short(item.address)), mk('small', 'mono', item.address));
+    const nameRow = mk('div', 'ws-wallet-name');
+    nameRow.append(mk('strong', '', item.label || short(item.address)), mk('span', `hf-badge${status.cls}`, status.badge));
+    const meta = mk('div', 'ws-wallet-meta');
+    meta.append(mk('small', 'mono', short(item.address)));
+    for (const tag of (item.tags || []).slice(0, 3)) meta.append(mk('span', 'ws-wallet-tag', tag));
+    title.append(nameRow, meta);
+    identity.append(avatar, title);
     const controls = mk('div', 'ws-ctrls');
     controls.append(btn('Scan', { sm: true, variant: 'primary', icon: 'refresh' }, run(async () => { window.toast('Scanning wallet…'); return call2(window.aurora.walletFollowScan(item.id)); })));
     const menu = mk('details', 'ws-wallet-menu');
@@ -603,8 +674,9 @@
     );
     menu.append(menuPanel);
     controls.append(menu);
-    heading.append(title, mk('span', `hf-badge${status.cls}`, status.badge), mk('span', 'ws-top-spacer'), controls);
+    heading.append(identity, mk('span', 'ws-top-spacer'), controls);
     const tabs = mk('div', 'ws-wallet-tabs');
+    tabs.setAttribute('role', 'tablist'); tabs.setAttribute('aria-label', 'Wallet details');
     for (const [id, label] of [['overview', 'Overview'], ['holdings', 'Holdings'], ['activity', 'Activity'], ['automation', 'Automation'], ['notes', 'Notes']]) {
       const b = mk('button', walletTab === id ? 'active' : '', label); b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(walletTab === id));
       b.onclick = () => { walletTab = id; draw(); }; tabs.append(b);
@@ -612,16 +684,16 @@
     const body = mk('div', 'ws-wallet-tabbody');
     if (walletTab === 'overview') {
       if (scan.at) {
-        body.append(walletInsight(scan));
-        body.append(walletStatbar(scan));
-        if ((scan.holdings || []).length) body.append(panel('Top holdings', {}, walletHoldingsTable(scan, 6)));
+        body.append(walletHero(scan));
+        body.append(walletBrief(scan));
+        if ((scan.holdings || []).length) body.append(panel('Top positions', { actions: btn('All holdings', { sm: true, variant: 'ghost', icon: 'portfolio' }, () => { walletTab = 'holdings'; draw(); }) }, walletPositionList(scan, 6)));
         const recent = (scan.recent || []).slice(0, 3);
         if (recent.length) { const list = mk('div', 'ws-list ws-followactivity'); for (const tx of recent) list.append(listItem(short(tx.signature), tx.blockTime ? new Date(tx.blockTime * 1000).toLocaleString() : 'unknown time')); body.append(panel('Latest activity', {}, list)); }
         if ((scan.unpriced || []).length) body.append(mk('p', 'ws-sub ws-note', `${scan.unpriced.length} unpriced token${scan.unpriced.length === 1 ? '' : 's'} not shown: ${scan.unpriced.slice(0, 6).map(t => t.name || t.symbol).join(', ')}.`));
       } else body.append(emptyState('wallet', 'No scan yet', 'Choose Scan to read holdings and recent activity, or ask Gigi to brief this wallet.'));
     } else if (walletTab === 'holdings') {
       if (scan.at) {
-        body.append(walletHoldingsTable(scan, 12));
+        body.append(walletPositionList(scan, 12));
         if ((scan.unpriced || []).length) body.append(mk('p', 'ws-sub ws-note', `${scan.unpriced.length} unpriced token${scan.unpriced.length === 1 ? '' : 's'} not shown: ${scan.unpriced.slice(0, 6).map(t => t.name || t.symbol).join(', ')}.`));
       } else body.append(emptyState('wallet', 'No holdings yet', 'Scan the wallet first.'));
     } else if (walletTab === 'activity') {
@@ -683,12 +755,10 @@
   function drawWallets(root, s) {
     const followed = wallet()?.followed || [];
     const actions = [];
-    if (followed.length >= 2) actions.push(btn(compareWallets ? 'Close compare' : 'Compare', { sm: true, variant: 'ghost', icon: 'chart' }, () => { compareWallets = !compareWallets; draw(); }));
     const scanJob = currentScanJob();
     const scanning = scanJob?.running === true;
     if (followed.length) actions.push(btn(scanning ? `Scanning ${scanJob.done}/${scanJob.total}…` : 'Scan all', { sm: true, variant: 'ghost', icon: 'refresh', disabled: scanning }, scanAllFollowed));
-    actions.push(btn(walletAddOpen ? 'Close add' : 'Add wallet', { sm: true, variant: walletAddOpen ? 'ghost' : 'primary', icon: 'plus' }, () => { walletAddOpen = !walletAddOpen; draw(); }));
-    actions.push(btn('Ask Gigi', { sm: true, variant: 'ghost', icon: 'chat' }, () => askGigi('Look at the wallets I follow. Compare their holdings and behavior, tell me what each one seems to be doing, and which tokens are worth researching next.')));
+    if (!followed.length) actions.push(btn(walletAddOpen ? 'Close add' : 'Add wallet', { sm: true, variant: 'primary', icon: 'plus' }, () => { walletAddOpen = !walletAddOpen; draw(); }));
     head(root, 'Wallets', 'Follow wallets you want to learn from. Gigi scans them read-only, briefs you on behavior, and answers questions about their tokens.', actions);
     if (scanning) root.append(scanJobPanel(scanJob));
     if (walletAddOpen || !followed.length) root.append(followForm());
@@ -697,7 +767,13 @@
     const layout = mk('div', 'ws-wallets-layout');
     const sidebar = mk('div', 'ws-wallet-sidebar');
     const sideHead = mk('div', 'ws-wallet-sidebar-head');
-    sideHead.append(mk('strong', '', `Wallets · ${followed.length}`), mk('span', 'ws-sub', compareWallets ? 'Compare mode' : 'Select a wallet'));
+    sideHead.append(mk('strong', '', `Wallets · ${followed.length}`), mk('span', 'ws-top-spacer'));
+    const sideActions = mk('div', 'ws-ctrls');
+    if (followed.length >= 2) sideActions.append(btn(compareWallets ? 'Close compare' : 'Compare', { sm: true, variant: 'ghost', icon: 'chart' }, () => { compareWallets = !compareWallets; draw(); }));
+    const addWallet = ibtn('plus', walletAddOpen ? 'Close add wallet' : 'Add wallet', () => { walletAddOpen = !walletAddOpen; draw(); });
+    addWallet.classList.toggle('active', walletAddOpen);
+    sideActions.append(addWallet);
+    sideHead.append(sideActions);
     const search = mk('input', 'hf-input ws-wallet-search'); search.type = 'search'; search.placeholder = 'Filter wallets'; search.value = walletQuery;
     const list = mk('div', 'ws-wallet-list');
     function renderWalletRows() {
@@ -1113,7 +1189,7 @@
     const nameRow = mk('div', 'ws-trade-name'); nameRow.append(mk('h1', 'ws-h1', pair.name || symbolName), mk('span', 'ws-tick', symbolName));
     const priceRow = mk('div', 'ws-trade-price'); priceRow.append(mk('b', '', money(pair.priceUsd))); if (pair.change24h != null) priceRow.append(mk('span', `ws-change ${change >= 0 ? 'hf-up' : 'hf-down'}`, `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`)); priceRow.append(mk('span', 'ws-mint', short(chartMint)));
     heading.append(nameRow, priceRow);
-    const ha = mk('div', 'ws-head-actions'); const tradeGuide = btn(tutorialLabel(), { sm: true, variant: 'ghost' }, () => openTutorial()); tradeGuide.classList.add('ws-tutorial-btn'); ha.append(tradeGuide, ...actions);
+    const ha = mk('div', 'ws-head-actions'); ha.append(tutorialButton(), ...actions);
     header.append(heading, ha); root.append(header);
     const meta = mk('div', 'ws-trademeta');
     meta.append(mk('span', '', `Liquidity ${pair.liquidityUsd ? '$' + compact(pair.liquidityUsd) : '—'}`), mk('span', '', `Vol 24h ${pair.volume24h ? '$' + compact(pair.volume24h) : '—'}`), mk('span', '', `Mkt cap ${pair.marketCap ? '$' + compact(pair.marketCap) : '—'}`));
@@ -1760,8 +1836,7 @@
     const actions = [];
     if (peopleScanState?.running) actions.push(mk('span', 'ws-sub', `Scanning ${peopleScanState.done}/${peopleScanState.total}…`));
     else if (tracked.length) actions.push(btn('Scan all', { sm: true, variant: 'ghost', icon: 'refresh' }, run(async () => { const data = await call2(window.aurora.walletPeopleScanAll()); peopleScanState = data.peopleScanJob || null; window.toast('Scanning tracked people…'); return data; })));
-    if (tracked.length) actions.push(mk('span', 'hf-badge ok', `${active} on radar`));
-    actions.push(btn('Starter pack', { sm: true, variant: 'ghost', icon: 'plus', title: 'Restore the top-trader starter pack' }, run(async () => { const data = await call2(window.aurora.walletRadarStarter({ force: true })); window.toast(data.radarStarter?.added ? `${data.radarStarter.added} starter wallets added.` : 'Starter pack is already complete.'); return data; })));
+    actions.push(btn('Starter pack', { sm: true, variant: 'ghost', icon: 'holders', title: 'Restore the top-trader starter pack' }, run(async () => { const data = await call2(window.aurora.walletRadarStarter({ force: true })); window.toast(data.radarStarter?.added ? `${data.radarStarter.added} starter wallets added.` : 'Starter pack is already complete.'); return data; })));
     actions.push(btn(peopleAddOpen ? 'Close add' : 'Add person', { sm: true, variant: peopleAddOpen ? 'ghost' : 'primary', icon: 'plus' }, () => { peopleAddOpen = !peopleAddOpen; draw(); }));
     head(root, 'People', 'Devs, KOLs, influencers and traders you track. Radar watches them read-only.', actions);
     const address = field('Wallet address', 'text'); address.querySelector('input').placeholder = 'Paste a Solana wallet'; address.querySelector('input').spellcheck = false;
@@ -1773,14 +1848,15 @@
     role.querySelector('select').onchange = () => { peopleAddKind = role.querySelector('select').value; };
     const tags = field('Tags', 'text'); tags.querySelector('input').placeholder = 'kol, ai, solana';
     const note = field('Note', 'text'); note.querySelector('input').placeholder = 'Why this wallet matters';
-    const form = mk('div', 'ws-runform');
-    form.append(address, label, role, tags, note, btn('Add & scan', { variant: 'primary', sm: true, icon: 'plus' }, run(async () => {
+    const form = mk('div', 'ws-people-form');
+    const submit = btn('Add & scan', { variant: 'primary', sm: true, icon: 'plus' }, run(async () => {
       const value = (inputOf(address) || '').trim();
       if (!value) throw Error('Paste a wallet address.');
       const data = await call2(window.aurora.walletPeopleSave({ address: value, label: inputOf(label) || '', kind: selectOf(role) || 'other', tags: inputOf(tags) || '', note: inputOf(note) || '' }));
       window.toast(`${inputOf(label) || short(value)} added and scanned.`);
       return data;
-    })));
+    })); submit.classList.add('ws-people-submit');
+    form.append(address, label, role, tags, note, submit);
     if (peopleAddOpen || !tracked.length) root.append(panel('Track a wallet', {}, form));
     const toolbar = mk('div', 'ws-people-toolbar');
     const search = mk('input', 'hf-input ws-people-search'); search.type = 'search'; search.placeholder = 'Search label, address, tag or note'; search.value = peopleQuery;
@@ -1816,34 +1892,57 @@
       if (peopleSort === 'name') visible = [...visible].sort((a, b) => a.label.localeCompare(b.label));
       else if (peopleSort === 'value') visible = [...visible].sort((a, b) => (b.scan?.total || 0) - (a.scan?.total || 0));
       else if (peopleSort === 'lastMove') visible = [...visible].sort((a, b) => (b.lastActivityAt || 0) - (a.lastActivityAt || 0));
-      count.textContent = `Showing ${visible.length} of ${tracked.length} · ${active} active`;
+      count.textContent = `Showing ${visible.length} of ${tracked.length} · ${active} on radar`;
       list.replaceChildren();
       if (!visible.length) { list.append(emptyState('holders', tracked.length ? 'No people match these filters' : 'No people tracked yet', tracked.length ? 'Try another role, source or status.' : 'Add a dev, KOL, influencer or trader above.')); return; }
       for (const person of visible) {
         const scan = person.scan;
-        const stats = person.stats || {};
         const activity = person.watchActivity === false ? 'radar paused' : person.lastActivityAt ? `last move ${ageLabel(person.lastActivityAt)}` : 'on radar';
         const sourceLabel = personSourceLabel(person.source);
         const rank = person.sourceRank ? ` #${person.sourceRank}` : '';
         const metric = person.pnlUsd ? `$${compact(person.pnlUsd)} PnL` : person.winRate ? `${Number(person.winRate).toFixed(1)}% win` : '';
-        const scanText = scan ? `${scan.pricedCount || scan.holdings?.length || 0} priced positions · scanned ${ageLabel(person.scanAt || scan.at)}` : 'not scanned';
-        const sub = [`${personRole(person.kind)} · ${sourceLabel}${rank}`, metric, scanText, activity, person.starter ? '' : person.note].filter(Boolean).join(' · ');
-        const ct = mk('div', 'ws-ctrls');
-        ct.append(
-          ibtn(person.watchActivity === false ? 'pause' : 'live', person.watchActivity === false ? 'Resume radar' : 'Pause radar', run(async () => call2(window.aurora.walletPeopleWatch({ id: person.id, enabled: person.watchActivity === false })))),
-          ibtn('refresh', 'Scan wallet', run(async () => call2(window.aurora.walletPeopleScan(person.id)))),
-          ibtn('external', 'Open on Solscan', () => call2(window.aurora.openLink(`https://solscan.io/account/${person.address}`)).catch(error => window.toast(error.message))),
-          ibtn('research', 'Open token intel', () => { section = 'research'; intelMint = ''; intelData = null; const first = scan?.holdings?.[0]?.mint; if (first) loadIntel(first); else window.toast('Scan this person to get a token to research.'); }),
-          ibtn('delete', 'Remove', run(async () => call2(window.aurora.walletPeopleRemove(person.id))))
-        );
-        const item = listItem(person.label, sub, scan ? money(scan.total) : '—', undefined, ct, personRoleBadge(person.kind));
+        const scanText = scan ? `${scan.pricedCount || scan.holdings?.length || 0} priced · ${ageLabel(person.scanAt || scan.at)} ago` : 'not scanned';
+        const item = mk('div', 'ws-item ws-person');
         item.title = person.note || '';
+        const initials = String(person.label || person.address || '?').trim().split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase() || '?';
+        const avatar = mk('span', 'ws-person-avatar', initials);
+        avatar.style.background = pulseGradient(person.address || person.label);
+        const body = mk('div', 'ws-person-body');
+        const top = mk('div', 'ws-person-head');
+        top.append(mk('strong', '', person.label || short(person.address)), personRoleBadge(person.kind), mk('span', 'ws-person-source', `${sourceLabel}${rank}`));
+        if (person.watchActivity === false) top.append(mk('span', 'hf-badge muted', 'paused'));
+        const meta = mk('div', 'ws-person-meta');
+        meta.append(mk('span', '', short(person.address)), mk('span', '', activity), mk('span', '', scanText));
+        if (metric) meta.append(mk('span', '', metric));
+        body.append(top, meta);
         if (scan?.holdings?.length) {
           const holdings = mk('div', 'ws-people-holdings');
           for (const holding of scan.holdings.slice(0, 4)) holdings.append(mk('span', 'ws-social', `${holding.symbol} ${money(holding.value)}`));
-          item.querySelector('div').append(holdings);
+          body.append(holdings);
         }
-        if (person.lastError) item.querySelector('div').append(mk('small', 'ws-note hf-down', person.lastError));
+        if (person.note && !person.starter) body.append(mk('p', 'ws-person-note', person.note));
+        if (person.lastError) body.append(mk('p', 'ws-person-note hf-down', person.lastError));
+        const right = mk('div', 'ws-person-right');
+        const value = mk('div', 'ws-person-value');
+        value.append(mk('b', '', scan ? money(scan.total) : '—'), mk('small', '', scan ? `scanned ${ageLabel(person.scanAt || scan.at)} ago` : 'not scanned'));
+        const actions = mk('div', 'ws-ctrls ws-person-actions');
+        actions.append(ibtn('refresh', 'Scan wallet', run(async () => call2(window.aurora.walletPeopleScan(person.id)))));
+        const menu = mk('details', 'ws-wallet-menu ws-person-menu');
+        const summary = mk('summary', ''); summary.textContent = '⋯'; summary.title = 'Person actions'; summary.setAttribute('aria-label', 'Person actions'); menu.append(summary);
+        const menuPanel = mk('div', 'ws-wallet-menu-panel');
+        const menuAction = (iconName, label, action, danger = false) => {
+          const button = mk('button', danger ? 'danger' : ''); button.type = 'button'; button.setAttribute('aria-label', label);
+          button.append(ic(iconName, 14), mk('span', '', label)); button.onclick = action; return button;
+        };
+        menuPanel.append(
+          menuAction(person.watchActivity === false ? 'play' : 'pause', person.watchActivity === false ? 'Resume radar' : 'Pause radar', run(async () => call2(window.aurora.walletPeopleWatch({ id: person.id, enabled: person.watchActivity === false })))),
+          menuAction('research', 'Open token intel', () => { section = 'research'; intelMint = ''; intelData = null; const first = scan?.holdings?.[0]?.mint; if (first) loadIntel(first); else window.toast('Scan this person to get a token to research.'); }),
+          menuAction('external', 'Open on Solscan', () => call2(window.aurora.openLink(`https://solscan.io/account/${person.address}`)).catch(error => window.toast(error.message))),
+          menuAction('delete', 'Remove', run(async () => call2(window.aurora.walletPeopleRemove(person.id))), true)
+        );
+        menu.append(menuPanel); actions.append(menu);
+        right.append(value, actions);
+        item.append(avatar, body, right);
         list.append(item);
       }
     }
@@ -1852,7 +1951,9 @@
     status.onchange = () => { peopleStatus = status.value; renderPeopleRows(); };
     sort.onchange = () => { peopleSort = sort.value; renderPeopleRows(); };
     renderPeopleRows();
-    root.append(panel('People on radar', {}, toolbar, filters, count, list));
+    const peoplePanel = panel('People on radar', {}, toolbar, filters, count, list);
+    peoplePanel.classList.add('ws-people-panel');
+    root.append(peoplePanel);
     root.append(panel('', {}, renderWalletGraph()));
   }
   async function loadIntel(mint) {

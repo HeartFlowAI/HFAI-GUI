@@ -30,6 +30,7 @@
     plus: '<path d="M12 5v14M5 12h14"/>',
     check: '<path d="M5 12.5l4 4 10-11"/>',
     alert: '<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/>',
+    help: '<circle cx="12" cy="12" r="9"/><path d="M9.3 9a2.8 2.8 0 1 1 4.3 2.5c-.9.6-1.6 1.1-1.6 2.2"/><path d="M12 17h.01"/>',
     pin: '<path d="M14 3l7 7-3 1-4 4-1 5-3-3-4-4 5-1 4-4z"/>',
     share: '<path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 13v6h14v-6"/>',
     chart: '<path d="M4 20V5M4 20h16"/><path d="M8 16l3-4 3 3 4-6"/>',
